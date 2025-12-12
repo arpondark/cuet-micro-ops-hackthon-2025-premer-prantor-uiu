@@ -1,0 +1,58 @@
+# Prometheus Configuration
+# CUET Micro-Ops Hackathon 2025
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'development'
+    project: 'delineate-hackathon'
+
+# Alerting configuration (optional - can add Alertmanager later)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: []
+
+# Rule files (optional - can add alert rules later)
+# rule_files:
+#   - "alert_rules.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+
+  # Delineate API Server
+  - job_name: 'delineate-api'
+    static_configs:
+      - targets: ['delineate-app:3000']
+    metrics_path: /metrics
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # MinIO S3 Storage
+  - job_name: 'minio'
+    static_configs:
+      - targets: ['minio:9000']
+    metrics_path: /minio/v2/metrics/cluster
+    scheme: http
+
+  # Loki (Log Aggregation)
+  - job_name: 'loki'
+    static_configs:
+      - targets: ['loki:3100']
+    metrics_path: /metrics
+
+  # Jaeger (Distributed Tracing)
+  - job_name: 'jaeger'
+    static_configs:
+      - targets: ['delineate-jaeger:14269']
+    metrics_path: /metrics
+
+  # Redis (if redis_exporter is added)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']

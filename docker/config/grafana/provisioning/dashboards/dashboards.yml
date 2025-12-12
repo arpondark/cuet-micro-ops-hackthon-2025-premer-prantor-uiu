@@ -1,0 +1,16 @@
+# Grafana Dashboard Provisioning
+# CUET Micro-Ops Hackathon 2025
+
+apiVersion: 1
+
+providers:
+  - name: 'Delineate Dashboards'
+    orgId: 1
+    folder: 'Delineate'
+    folderUid: 'delineate'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json
