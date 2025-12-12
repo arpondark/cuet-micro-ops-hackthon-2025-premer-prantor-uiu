@@ -1,13 +1,8 @@
 import { HeadObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { serve } from "@hono/node-server";
 import type { ServerType } from "@hono/node-server";
-import { httpInstrumentationMiddleware } from "@hono/otel";
 import { sentry } from "@hono/sentry";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { resourceFromAttributes } from "@opentelemetry/resources";
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 import { Scalar } from "@scalar/hono-api-reference";
 import { cors } from "hono/cors";
 import { secureHeaders } from "hono/secure-headers";
@@ -38,7 +33,6 @@ const EnvSchema = z.object({
   S3_BUCKET_NAME: z.string().default(""),
   S3_FORCE_PATH_STYLE: z.coerce.boolean().default(false),
   SENTRY_DSN: optionalUrl,
-  OTEL_EXPORTER_OTLP_ENDPOINT: optionalUrl,
   REQUEST_TIMEOUT_MS: z.coerce.number().int().min(1000).default(30000),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1000).default(60000),
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().int().min(1).default(100),
@@ -68,15 +62,6 @@ const s3Client = new S3Client({
     }),
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
 });
-
-// Initialize OpenTelemetry SDK
-const otelSDK = new NodeSDK({
-  resource: resourceFromAttributes({
-    [ATTR_SERVICE_NAME]: "delineate-hackathon-challenge",
-  }),
-  traceExporter: new OTLPTraceExporter(),
-});
-otelSDK.start();
 
 // Initialize Prometheus metrics
 const register = new client.Registry();
@@ -166,17 +151,11 @@ app.use(
   }),
 );
 
-// OpenTelemetry middleware
-app.use(
-  httpInstrumentationMiddleware({
-    serviceName: "delineate-hackathon-challenge",
-  }),
-);
-
-// Sentry middleware
+// Sentry middleware for real-time error tracking
 app.use(
   sentry({
     dsn: env.SENTRY_DSN,
+    debug: true, // Enable debug mode for real-time feedback
   }),
 );
 
@@ -316,12 +295,122 @@ app.get("/api/logs/stream", (c) => {
   });
 });
 
+// =============================================================================
+// SENTRY REAL-TIME EVENTS (Challenge 4 - Error Tracking)
+// =============================================================================
+interface SentryEvent {
+  id: string;
+  timestamp: string;
+  type: "error" | "transaction" | "replay";
+  message: string;
+  level: "fatal" | "error" | "warning" | "info" | "debug";
+  data?: Record<string, unknown>;
+}
+
+const sentryEventsStore: SentryEvent[] = [];
+const MAX_SENTRY_EVENTS = 500;
+
+// Helper to add Sentry event
+const addSentryEvent = (
+  type: SentryEvent["type"],
+  message: string,
+  level: SentryEvent["level"] = "info",
+  data?: Record<string, unknown>,
+) => {
+  const event: SentryEvent = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    type,
+    message,
+    level,
+    data,
+  };
+  sentryEventsStore.unshift(event);
+  if (sentryEventsStore.length > MAX_SENTRY_EVENTS) {
+    sentryEventsStore.pop();
+  }
+  console.log(`[Sentry] ${type.toUpperCase()}: ${message}`);
+  return event;
+};
+
+// Sentry events API endpoint - Get all captured Sentry events
+app.get("/api/sentry/events", (c) => {
+  const limit = Math.min(Number(c.req.query("limit") ?? 50), MAX_SENTRY_EVENTS);
+  const type = c.req.query("type") as SentryEvent["type"] | undefined;
+  const level = c.req.query("level") as SentryEvent["level"] | undefined;
+
+  let filtered = sentryEventsStore;
+
+  if (type) {
+    filtered = filtered.filter((e) => e.type === type);
+  }
+
+  if (level) {
+    filtered = filtered.filter((e) => e.level === level);
+  }
+
+  return c.json({
+    events: filtered.slice(0, limit),
+    total: filtered.length,
+    hasMore: filtered.length > limit,
+    lastUpdated: new Date().toISOString(),
+  });
+});
+
+// SSE endpoint for real-time Sentry events
+app.get("/api/sentry/events/stream", (c) => {
+  let lastEventId = "";
+
+  return streamSSE(c, async (stream) => {
+    // Send existing events first
+    for (const event of sentryEventsStore.slice(0, 100).reverse()) {
+      await stream.writeSSE({
+        data: JSON.stringify(event),
+        event: "sentry-event",
+        id: event.id,
+      });
+      lastEventId = event.id;
+    }
+
+    // Then poll for new events
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    while (true) {
+      await stream.sleep(500);
+
+      const newEvents = sentryEventsStore.filter((e) => {
+        const lastIndex = sentryEventsStore.findIndex(
+          (x) => x.id === lastEventId,
+        );
+        const currentIndex = sentryEventsStore.indexOf(e);
+        return currentIndex < lastIndex;
+      });
+
+      for (const event of newEvents.reverse()) {
+        await stream.writeSSE({
+          data: JSON.stringify(event),
+          event: "sentry-event",
+          id: event.id,
+        });
+        lastEventId = event.id;
+      }
+    }
+  });
+});
+
 // ErrorResponseSchema removed
 
 // Error handler with Sentry
 app.onError((err, c) => {
   c.get("sentry").captureException(err);
   const requestId = c.get("requestId") as string | undefined;
+
+  // Add to Sentry events store for real-time tracking
+  addSentryEvent("error", err.message, "error", {
+    stack: err.stack,
+    requestId,
+    path: c.req.path,
+    method: c.req.method,
+  });
 
   // Log error to our store
   addLog("error", `Error: ${err.message}`, {
