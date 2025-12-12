@@ -1330,21 +1330,10 @@ const gracefulShutdown = (server: ServerType) => (signal: string) => {
   server.close(() => {
     console.log("HTTP server closed");
 
-    // Shutdown OpenTelemetry to flush traces
-    otelSDK
-      .shutdown()
-      .then(() => {
-        console.log("OpenTelemetry SDK shut down");
-      })
-      .catch((err: unknown) => {
-        console.error("Error shutting down OpenTelemetry:", err);
-      })
-      .finally(() => {
-        // Destroy S3 client
-        s3Client.destroy();
-        console.log("S3 client destroyed");
-        console.log("Graceful shutdown completed");
-      });
+    // Destroy S3 client
+    s3Client.destroy();
+    console.log("S3 client destroyed");
+    console.log("Graceful shutdown completed");
   });
 };
 
