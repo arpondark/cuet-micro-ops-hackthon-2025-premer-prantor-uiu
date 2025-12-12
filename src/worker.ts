@@ -7,12 +7,11 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { serve } from "@hono/node-server";
 import { Worker } from "bullmq";
+import type { Job } from "bullmq";
 import { Hono } from "hono";
 import Redis from "ioredis";
 import client from "prom-client";
 import { z } from "zod";
-
-import type { Job } from "bullmq";
 
 // Environment schema
 const EnvSchema = z.object({
