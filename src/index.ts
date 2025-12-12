@@ -55,11 +55,11 @@ const s3Client = new S3Client({
   ...(env.S3_ENDPOINT && { endpoint: env.S3_ENDPOINT }),
   ...(env.S3_ACCESS_KEY_ID &&
     env.S3_SECRET_ACCESS_KEY && {
-      credentials: {
-        accessKeyId: env.S3_ACCESS_KEY_ID,
-        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-      },
-    }),
+    credentials: {
+      accessKeyId: env.S3_ACCESS_KEY_ID,
+      secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+    },
+  }),
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
 });
 
@@ -932,7 +932,7 @@ app.openapi(downloadStartRoute, async (c) => {
 // POST /v1/export/create - Create a new export job
 const exportCreateRoute = createRoute({
   method: "post",
-  path: "/v1/export/create",
+  path: "/v1/export",
   tags: ["Export Jobs"],
   summary: "Create a new export job",
   description:
@@ -968,7 +968,7 @@ app.openapi(exportCreateRoute, async (c) => {
   // Record metric
   httpRequestsTotal.inc({
     method: "POST",
-    path: "/v1/export/create",
+    path: "/v1/export",
     status: "202",
   });
 
@@ -982,8 +982,8 @@ app.openapi(exportCreateRoute, async (c) => {
       status: "queued" as const,
       totalFiles: file_ids.length,
       message: "Export job queued for processing",
-      sseUrl: `/v1/export/progress/${jobId}`,
-      statusUrl: `/v1/export/status/${jobId}`,
+      sseUrl: `/v1/export/${jobId}/progress`,
+      statusUrl: `/v1/export/${jobId}`,
     },
     202,
   );
@@ -992,7 +992,7 @@ app.openapi(exportCreateRoute, async (c) => {
 // GET /v1/export/status/:jobId - Get job status (polling)
 const exportStatusRoute = createRoute({
   method: "get",
-  path: "/v1/export/status/{jobId}",
+  path: "/v1/export/{jobId}",
   tags: ["Export Jobs"],
   summary: "Get export job status",
   description:
@@ -1033,7 +1033,7 @@ app.openapi(exportStatusRoute, async (c) => {
   if (status.status === "not_found") {
     httpRequestsTotal.inc({
       method: "GET",
-      path: "/v1/export/status/:jobId",
+      path: "/v1/export/:jobId",
       status: "404",
     });
     return c.json({ error: "Job not found", jobId }, 404);
@@ -1041,7 +1041,7 @@ app.openapi(exportStatusRoute, async (c) => {
 
   httpRequestsTotal.inc({
     method: "GET",
-    path: "/v1/export/status/:jobId",
+    path: "/v1/export/:jobId",
     status: "200",
   });
 
@@ -1084,7 +1084,7 @@ function mapBullMQStatus(
 // GET /v1/export/progress/:jobId - SSE progress stream
 const exportProgressRoute = createRoute({
   method: "get",
-  path: "/v1/export/progress/{jobId}",
+  path: "/v1/export/{jobId}/progress",
   tags: ["Export Jobs"],
   summary: "Stream export progress via SSE",
   description:
@@ -1121,7 +1121,7 @@ app.openapi(exportProgressRoute, (c) => {
 
   httpRequestsTotal.inc({
     method: "GET",
-    path: "/v1/export/progress/:jobId",
+    path: "/v1/export/:jobId/progress",
     status: "200",
   });
 
@@ -1213,7 +1213,7 @@ function getProgressMessage(
 // GET /v1/export/download/:jobId - Get presigned download URL
 const exportDownloadRoute = createRoute({
   method: "get",
-  path: "/v1/export/download/{jobId}",
+  path: "/v1/export/{jobId}/download",
   tags: ["Export Jobs"],
   summary: "Get presigned download URL",
   description:
@@ -1266,7 +1266,7 @@ app.openapi(exportDownloadRoute, async (c) => {
   if (status.status === "not_found") {
     httpRequestsTotal.inc({
       method: "GET",
-      path: "/v1/export/download/:jobId",
+      path: "/v1/export/:jobId/download",
       status: "404",
     });
     return c.json({ error: "Job not found", jobId }, 404);
@@ -1275,7 +1275,7 @@ app.openapi(exportDownloadRoute, async (c) => {
   if (status.status !== "completed") {
     httpRequestsTotal.inc({
       method: "GET",
-      path: "/v1/export/download/:jobId",
+      path: "/v1/export/:jobId/download",
       status: "409",
     });
     return c.json(
@@ -1290,7 +1290,7 @@ app.openapi(exportDownloadRoute, async (c) => {
 
   httpRequestsTotal.inc({
     method: "GET",
-    path: "/v1/export/download/:jobId",
+    path: "/v1/export/:jobId/download",
     status: "200",
   });
 

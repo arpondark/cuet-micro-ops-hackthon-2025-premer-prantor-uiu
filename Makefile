@@ -48,7 +48,6 @@ help:
 	@echo "  Worker Metrics: http://localhost:3002/metrics"
 	@echo "  Grafana:     http://localhost:3001 (admin/admin)"
 	@echo "  MinIO:       http://localhost:9001 (minioadmin/minioadmin)"
-	@echo "  Prometheus:  http://localhost:9090"
 	@echo "  Jaeger:      http://localhost:16686"
 	@echo ""
 
@@ -80,9 +79,7 @@ dev:
 	@echo "   API Docs:    http://localhost:3000/docs"
 	@echo "   Health:      http://localhost:3000/health"
 	@echo "   Worker:      http://localhost:3002/metrics"
-	@echo "   Grafana:     http://localhost:3001"
 	@echo "   MinIO:       http://localhost:9001"
-	@echo "   Prometheus:  http://localhost:9090"
 	@echo "   Jaeger:      http://localhost:16686"
 
 all: dev
@@ -98,8 +95,8 @@ worker:
 	@echo "✅ Worker started at http://localhost:3002/metrics"
 
 infra:
-	@echo "🚀 Starting infrastructure (Redis, MinIO, Prometheus, etc.)..."
-	docker compose -f docker/compose.dev.yml up -d minio minio-init redis prometheus loki promtail grafana delineate-jaeger
+	@echo "🚀 Starting infrastructure (Redis, MinIO, etc.)..."
+	docker compose -f docker/compose.dev.yml up -d minio minio-init redis delineate-jaeger
 	@echo "✅ Infrastructure started!"
 
 prod:
@@ -111,9 +108,7 @@ prod:
 	@echo "📊 Access URLs:"
 	@echo "   API Docs:    http://localhost:3000/docs"
 	@echo "   Health:      http://localhost:3000/health"
-	@echo "   Grafana:     http://localhost:3001"
 	@echo "   MinIO:       http://localhost:9001"
-	@echo "   Prometheus:  http://localhost:9090"
 	@echo "   Jaeger:      http://localhost:16686"
 
 # ============================================
@@ -158,7 +153,6 @@ reboot:
 	@echo "📊 Access URLs:"
 	@echo "   API Docs:    http://localhost:3000/docs"
 	@echo "   Health:      http://localhost:3000/health"
-	@echo "   Grafana:     http://localhost:3001"
 
 reboot-prod:
 	@echo "🔄 Full production reboot in progress..."
@@ -183,9 +177,9 @@ logs-worker:
 	@echo "📋 Showing Worker logs..."
 	docker logs -f delineate-delineate-worker-1
 
-logs-grafana:
-	@echo "📋 Showing Grafana logs..."
-	docker logs -f delineate-grafana
+logs-worker:
+	@echo "📋 Showing Worker logs..."
+	docker logs -f delineate-delineate-worker-1
 
 logs-minio:
 	@echo "📋 Showing MinIO logs..."
@@ -251,9 +245,9 @@ open-docs:
 	@echo "🌐 Opening API Docs..."
 	start http://localhost:3000/docs
 
-open-grafana:
-	@echo "🌐 Opening Grafana..."
-	start http://localhost:3001
+open-docs:
+	@echo "🌐 Opening API Docs..."
+	start http://localhost:3000/docs
 
 open-minio:
 	@echo "🌐 Opening MinIO Console..."
@@ -266,6 +260,5 @@ open-jaeger:
 open-all:
 	@echo "🌐 Opening all dashboards..."
 	start http://localhost:3000/docs
-	start http://localhost:3001
 	start http://localhost:9001
 	start http://localhost:16686
