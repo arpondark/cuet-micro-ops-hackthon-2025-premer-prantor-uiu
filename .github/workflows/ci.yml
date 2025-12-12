@@ -1,4 +1,11 @@
-name: CI
+# =============================================================================
+# Delineate API - CI/CD Pipeline
+# =============================================================================
+# This pipeline runs on every push to main/master and all pull requests.
+# Pipeline: Lint → Test → Build Docker → Deploy to Docker Hub
+# =============================================================================
+
+name: CI/CD Pipeline
 
 on:
   push:
@@ -6,39 +13,63 @@ on:
   pull_request:
     branches: [main, master]
 
+# Cancel in-progress runs for the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "24"
+  DOCKER_IMAGE_NAME: delineate-api
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+
 jobs:
+  # ===========================================================================
+  # Stage 1: Lint - Code Quality Checks (FIRST)
+  # ===========================================================================
   lint:
-    name: Lint
+    name: 🔍 Lint & Format Check
     runs-on: ubuntu-24.04
-    container:
-      image: node:24-slim
     steps:
-      - name: Checkout
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: 📦 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Run ESLint
+      - name: 🔍 Run ESLint
         run: npm run lint
 
-      - name: Check formatting
+      - name: 💅 Check code formatting
         run: npm run format:check
 
+  # ===========================================================================
+  # Stage 2: E2E Tests (AFTER LINT)
+  # ===========================================================================
   test:
-    name: E2E Tests
+    name: 🧪 E2E Tests
     runs-on: ubuntu-24.04
-    needs: lint
-    container:
-      image: node:24-slim
+    needs: lint  # Must pass lint first
     steps:
-      - name: Checkout
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: 📦 Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: 📦 Install dependencies
         run: npm ci
 
-      - name: Run E2E tests
+      - name: 🧪 Run E2E tests
         run: npm run test:e2e
         env:
           NODE_ENV: development
@@ -53,23 +84,147 @@ jobs:
           RATE_LIMIT_MAX_REQUESTS: "100"
           CORS_ORIGINS: "*"
 
+  # ===========================================================================
+  # Stage 3: Build Docker Image (AFTER TEST)
+  # ===========================================================================
   build:
-    name: Build Docker Image
+    name: 🐳 Build Docker Image
     runs-on: ubuntu-24.04
-    needs: test
+    needs: test  # Must pass test first
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
     steps:
-      - name: Checkout
+      - name: 📥 Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
+      - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: 📋 Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix=
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || github.ref == format('refs/heads/{0}', 'master') }}
+
+      - name: 🏗️ Build Docker image (for PR - no push)
+        if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
           context: .
           file: docker/Dockerfile.prod
           push: false
-          tags: delineate-hackathon-challenge:${{ github.sha }}
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: 🔒 Scan Docker image with Trivy
+        if: github.event_name == 'pull_request'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.ref_name }}"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+        continue-on-error: true
+
+  # ===========================================================================
+  # Stage 4: Deploy to Docker Hub (AFTER BUILD - only on main/master)
+  # ===========================================================================
+  deploy:
+    name: 🚀 Deploy to Docker Hub
+    runs-on: ubuntu-24.04
+    needs: build  # Must pass build first
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - name: 📋 Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=
+            type=ref,event=branch
+
+      - name: 🚀 Build and Push to Docker Hub
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: 📋 Image Summary
+        run: |
+          echo "## 🐳 Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Pull Command:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.DOCKER_IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # ===========================================================================
+  # Summary Job - Reports overall status
+  # ===========================================================================
+  summary:
+    name: ✅ Pipeline Summary
+    runs-on: ubuntu-24.04
+    needs: [lint, test, build]
+    if: always()
+    steps:
+      - name: 📋 Check job results
+        run: |
+          echo "## 📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pipeline Flow: Lint → Test → Build → Deploy" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Stage | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 1️⃣ Lint | ${{ needs.lint.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 2️⃣ Test | ${{ needs.test.result == 'success' && '✅ Passed' || (needs.test.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 3️⃣ Build | ${{ needs.build.result == 'success' && '✅ Passed' || (needs.build.result == 'skipped' && '⏭️ Skipped' || '❌ Failed') }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: ❌ Fail if any job failed
+        if: |
+          needs.lint.result == 'failure' ||
+          needs.test.result == 'failure' ||
+          needs.build.result == 'failure'
+        run: exit 1
