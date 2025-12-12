@@ -4,7 +4,7 @@ services:
   # =============================================================================
   # APPLICATION LAYER
   # =============================================================================
-  
+
   delineate-app:
     build:
       context: ..
@@ -34,10 +34,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: "1"
           memory: 512M
         reservations:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
     logging:
       driver: "json-file"
@@ -51,7 +51,7 @@ services:
   # =============================================================================
   # DATA LAYER
   # =============================================================================
-  
+
   # MinIO - S3 Compatible Object Storage
   minio:
     image: minio/minio:latest
@@ -78,7 +78,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     logging:
       driver: "json-file"
@@ -124,7 +124,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 256M
     logging:
       driver: "json-file"
@@ -135,7 +135,7 @@ services:
   # =============================================================================
   # OBSERVABILITY LAYER
   # =============================================================================
-  
+
   # Jaeger - Distributed Tracing
   delineate-jaeger:
     image: jaegertracing/all-in-one:latest
@@ -153,7 +153,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
     logging:
       driver: "json-file"
@@ -171,12 +171,12 @@ services:
       - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=15d'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+      - "--web.enable-lifecycle"
     restart: unless-stopped
     depends_on:
       - delineate-app
@@ -186,7 +186,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     logging:
       driver: "json-file"
@@ -206,7 +206,11 @@ services:
     command: -config.file=/etc/loki/local-config.yaml
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -215,7 +219,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 512M
     logging:
       driver: "json-file"
@@ -240,7 +244,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.25'
+          cpus: "0.25"
           memory: 128M
     logging:
       driver: "json-file"
@@ -273,7 +277,7 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '0.5'
+          cpus: "0.5"
           memory: 256M
     logging:
       driver: "json-file"

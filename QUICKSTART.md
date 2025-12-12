@@ -2,13 +2,13 @@
 
 ## Hackathon Challenge Status
 
-| Challenge | Status | Points |
-|-----------|--------|--------|
-| ✅ Challenge 1: S3 Storage Integration | **Complete** | 15/15 |
-| ✅ Challenge 2: Architecture Design | **Complete** | 15/15 |
-| ✅ Challenge 3: CI/CD Pipeline | **Complete** | 10/10 |
-| ✅ Challenge 4: Observability (Bonus) | **Complete** | 10/10 |
-| **Total** | **All Challenges Complete** | **50/50** |
+| Challenge                              | Status                      | Points    |
+| -------------------------------------- | --------------------------- | --------- |
+| ✅ Challenge 1: S3 Storage Integration | **Complete**                | 15/15     |
+| ✅ Challenge 2: Architecture Design    | **Complete**                | 15/15     |
+| ✅ Challenge 3: CI/CD Pipeline         | **Complete**                | 10/10     |
+| ✅ Challenge 4: Observability (Bonus)  | **Complete**                | 10/10     |
+| **Total**                              | **All Challenges Complete** | **50/50** |
 
 ---
 
@@ -56,15 +56,15 @@ All containers should show `healthy` status.
 
 Once started, access these URLs in your browser:
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **API Documentation** | http://localhost:3000/docs | - |
-| **API Health** | http://localhost:3000/health | - |
-| **Grafana Dashboard** | http://localhost:3001 | admin / admin |
-| **MinIO Console** | http://localhost:9001 | minioadmin / minioadmin |
-| **Prometheus** | http://localhost:9090 | - |
-| **Jaeger Tracing** | http://localhost:16686 | - |
-| **Loki Logs** | http://localhost:3100 | - |
+| Service               | URL                          | Credentials             |
+| --------------------- | ---------------------------- | ----------------------- |
+| **API Documentation** | http://localhost:3000/docs   | -                       |
+| **API Health**        | http://localhost:3000/health | -                       |
+| **Grafana Dashboard** | http://localhost:3001        | admin / admin           |
+| **MinIO Console**     | http://localhost:9001        | minioadmin / minioadmin |
+| **Prometheus**        | http://localhost:9090        | -                       |
+| **Jaeger Tracing**    | http://localhost:16686       | -                       |
+| **Loki Logs**         | http://localhost:3100        | -                       |
 
 ---
 
@@ -77,8 +77,9 @@ curl http://localhost:3000/health
 ```
 
 Expected response:
+
 ```json
-{"status":"healthy","checks":{"storage":"ok"}}
+{ "status": "healthy", "checks": { "storage": "ok" } }
 ```
 
 ### 2. Run E2E Tests
@@ -128,6 +129,7 @@ curl -X POST http://localhost:3000/v1/export/create \
 ### View Logs
 
 In Grafana:
+
 1. Go to **Explore**
 2. Select **Loki** data source
 3. Query: `{container=~"delineate.*"}`
@@ -227,6 +229,7 @@ If ports are already in use, modify `docker/compose.dev.yml` to use different po
 ### Storage not connecting?
 
 Ensure MinIO is healthy:
+
 ```bash
 docker logs delineate-minio-init
 ```

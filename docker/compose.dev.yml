@@ -4,7 +4,7 @@ services:
   # =============================================================================
   # APPLICATION LAYER
   # =============================================================================
-  
+
   delineate-app:
     build:
       context: ..
@@ -107,7 +107,7 @@ services:
   # =============================================================================
   # DATA LAYER
   # =============================================================================
-  
+
   # MinIO - S3 Compatible Object Storage
   minio:
     image: minio/minio:latest
@@ -184,15 +184,15 @@ services:
   # =============================================================================
   # OBSERVABILITY LAYER (Challenge 4: Sentry + OpenTelemetry + Jaeger)
   # =============================================================================
-  
+
   # Jaeger - Distributed Tracing (Required for Challenge 4)
   delineate-jaeger:
     image: jaegertracing/all-in-one:latest
     container_name: delineate-jaeger
     ports:
-      - "16686:16686"   # Jaeger UI
-      - "4318:4318"     # OTLP HTTP receiver
-      - "14269:14269"   # Admin port
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP receiver
+      - "14269:14269" # Admin port
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     networks:

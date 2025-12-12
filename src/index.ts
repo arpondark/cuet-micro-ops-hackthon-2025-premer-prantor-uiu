@@ -61,11 +61,11 @@ const s3Client = new S3Client({
   ...(env.S3_ENDPOINT && { endpoint: env.S3_ENDPOINT }),
   ...(env.S3_ACCESS_KEY_ID &&
     env.S3_SECRET_ACCESS_KEY && {
-    credentials: {
-      accessKeyId: env.S3_ACCESS_KEY_ID,
-      secretAccessKey: env.S3_SECRET_ACCESS_KEY,
-    },
-  }),
+      credentials: {
+        accessKeyId: env.S3_ACCESS_KEY_ID,
+        secretAccessKey: env.S3_SECRET_ACCESS_KEY,
+      },
+    }),
   forcePathStyle: env.S3_FORCE_PATH_STYLE,
 });
 
@@ -84,16 +84,16 @@ client.collectDefaultMetrics({ register });
 
 // Custom HTTP metrics for Grafana dashboard
 const httpRequestsTotal = new client.Counter({
-  name: 'http_requests_total',
-  help: 'Total number of HTTP requests',
-  labelNames: ['method', 'path', 'status'],
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "path", "status"],
   registers: [register],
 });
 
 const httpRequestDuration = new client.Histogram({
-  name: 'http_request_duration_seconds',
-  help: 'HTTP request duration in seconds',
-  labelNames: ['method', 'path', 'status'],
+  name: "http_request_duration_seconds",
+  help: "HTTP request duration in seconds",
+  labelNames: ["method", "path", "status"],
   buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 30, 60, 120],
   registers: [register],
 });
@@ -123,7 +123,7 @@ app.use(async (c, next) => {
   const status = String(c.res.status);
 
   // Skip metrics endpoint to avoid recursion
-  if (path !== '/metrics') {
+  if (path !== "/metrics") {
     httpRequestsTotal.inc({ method, path, status });
     httpRequestDuration.observe({ method, path, status }, duration);
   }
@@ -134,7 +134,13 @@ app.use(
   cors({
     origin: env.CORS_ORIGINS,
     allowMethods: ["GET", "POST", "OPTIONS"],
-    allowHeaders: ["Content-Type", "Authorization", "X-Request-ID", "traceparent", "baggage"],
+    allowHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Request-ID",
+      "traceparent",
+      "baggage",
+    ],
     exposeHeaders: [
       "X-Request-ID",
       "X-RateLimit-Limit",
@@ -186,7 +192,7 @@ app.get("/metrics", async (c) => {
 interface LogEntry {
   id: string;
   timestamp: string;
-  level: 'info' | 'warn' | 'error' | 'debug';
+  level: "info" | "warn" | "error" | "debug";
   message: string;
   service: string;
   traceId?: string;
@@ -199,13 +205,18 @@ const MAX_LOGS = 1000;
 const logsStore: LogEntry[] = [];
 
 // Helper to add log entry
-const addLog = (level: LogEntry['level'], message: string, metadata?: Record<string, unknown>, traceId?: string) => {
+const addLog = (
+  level: LogEntry["level"],
+  message: string,
+  metadata?: Record<string, unknown>,
+  traceId?: string,
+) => {
   const entry: LogEntry = {
     id: crypto.randomUUID(),
     timestamp: new Date().toISOString(),
     level,
     message,
-    service: 'delineate-api',
+    service: "delineate-api",
     traceId,
     metadata,
   };
@@ -219,37 +230,45 @@ const addLog = (level: LogEntry['level'], message: string, metadata?: Record<str
 // Log all requests
 app.use(async (c, next) => {
   const start = Date.now();
-  const traceId = c.req.header('traceparent')?.split('-')[1];
+  const traceId = c.req.header("traceparent")?.split("-")[1];
 
   await next();
 
   const duration = Date.now() - start;
-  const level = c.res.status >= 500 ? 'error' : c.res.status >= 400 ? 'warn' : 'info';
+  const level =
+    c.res.status >= 500 ? "error" : c.res.status >= 400 ? "warn" : "info";
 
-  addLog(level, `${c.req.method} ${c.req.path} - ${String(c.res.status)} (${String(duration)}ms)`, {
-    method: c.req.method,
-    path: c.req.path,
-    status: c.res.status,
-    duration,
-    requestId: c.get('requestId'),
-  }, traceId);
+  addLog(
+    level,
+    `${c.req.method} ${c.req.path} - ${String(c.res.status)} (${String(duration)}ms)`,
+    {
+      method: c.req.method,
+      path: c.req.path,
+      status: c.res.status,
+      duration,
+      requestId: c.get("requestId"),
+    },
+    traceId,
+  );
 });
 
 // Logs API endpoint
 app.get("/api/logs", (c) => {
-  const limit = Math.min(Number(c.req.query('limit') ?? 100), MAX_LOGS);
-  const level = c.req.query('level');
-  const since = c.req.query('since');
+  const limit = Math.min(Number(c.req.query("limit") ?? 100), MAX_LOGS);
+  const level = c.req.query("level");
+  const since = c.req.query("since");
 
   let filteredLogs = logsStore;
 
   if (level) {
-    filteredLogs = filteredLogs.filter(log => log.level === level);
+    filteredLogs = filteredLogs.filter((log) => log.level === level);
   }
 
   if (since) {
     const sinceDate = new Date(since);
-    filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) > sinceDate);
+    filteredLogs = filteredLogs.filter(
+      (log) => new Date(log.timestamp) > sinceDate,
+    );
   }
 
   return c.json({
@@ -261,25 +280,26 @@ app.get("/api/logs", (c) => {
 
 // SSE endpoint for real-time log streaming
 app.get("/api/logs/stream", (c) => {
-  let lastLogId = '';
+  let lastLogId = "";
 
   return streamSSE(c, async (stream) => {
     // Send existing logs first
     for (const log of logsStore.slice(0, 50).reverse()) {
       await stream.writeSSE({
         data: JSON.stringify(log),
-        event: 'log',
+        event: "log",
         id: log.id,
       });
       lastLogId = log.id;
     }
 
     // Then poll for new logs
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     while (true) {
       await stream.sleep(1000);
 
-      const newLogs = logsStore.filter(log => {
-        const lastIndex = logsStore.findIndex(l => l.id === lastLogId);
+      const newLogs = logsStore.filter((log) => {
+        const lastIndex = logsStore.findIndex((l) => l.id === lastLogId);
         const currentIndex = logsStore.indexOf(log);
         return currentIndex < lastIndex;
       });
@@ -287,7 +307,7 @@ app.get("/api/logs/stream", (c) => {
       for (const log of newLogs.reverse()) {
         await stream.writeSSE({
           data: JSON.stringify(log),
-          event: 'log',
+          event: "log",
           id: log.id,
         });
         lastLogId = log.id;
@@ -304,7 +324,7 @@ app.onError((err, c) => {
   const requestId = c.get("requestId") as string | undefined;
 
   // Log error to our store
-  addLog('error', `Error: ${err.message}`, {
+  addLog("error", `Error: ${err.message}`, {
     stack: err.stack,
     requestId,
   });
@@ -364,21 +384,38 @@ const ExportCreateResponseSchema = z
     status: z.enum(["queued", "processing"]),
     totalFiles: z.number().int(),
     message: z.string(),
-    sseUrl: z.string().openapi({ description: "SSE endpoint URL for progress updates" }),
-    statusUrl: z.string().openapi({ description: "Status endpoint URL for polling" }),
+    sseUrl: z
+      .string()
+      .openapi({ description: "SSE endpoint URL for progress updates" }),
+    statusUrl: z
+      .string()
+      .openapi({ description: "Status endpoint URL for polling" }),
   })
   .openapi("ExportCreateResponse");
 
 const ExportStatusResponseSchema = z
   .object({
     jobId: z.string(),
-    status: z.enum(["waiting", "active", "completed", "failed", "delayed", "not_found"]),
+    status: z.enum([
+      "waiting",
+      "active",
+      "completed",
+      "failed",
+      "delayed",
+      "not_found",
+    ]),
     progress: z
       .object({
         percent: z.number(),
         currentFile: z.number(),
         totalFiles: z.number(),
-        stage: z.enum(["queued", "processing", "uploading", "completed", "failed"]),
+        stage: z.enum([
+          "queued",
+          "processing",
+          "uploading",
+          "completed",
+          "failed",
+        ]),
         message: z.string(),
       })
       .nullable(),
@@ -399,8 +436,14 @@ const ExportDownloadResponseSchema = z
   .object({
     jobId: z.string(),
     status: z.enum(["ready", "pending", "failed", "not_found"]),
-    downloadUrl: z.string().nullable().openapi({ description: "Presigned S3 URL (valid for 1 hour)" }),
-    expiresIn: z.number().nullable().openapi({ description: "URL expiration in seconds" }),
+    downloadUrl: z
+      .string()
+      .nullable()
+      .openapi({ description: "Presigned S3 URL (valid for 1 hour)" }),
+    expiresIn: z
+      .number()
+      .nullable()
+      .openapi({ description: "URL expiration in seconds" }),
     message: z.string(),
   })
   .openapi("ExportDownloadResponse");
@@ -597,7 +640,11 @@ const sleep = (ms: number): Promise<void> =>
 // Check S3 availability for a file
 const checkS3Availability = async (
   fileId: number,
-): Promise<{ available: boolean; s3Key: string | null; size: number | null }> => {
+): Promise<{
+  available: boolean;
+  s3Key: string | null;
+  size: number | null;
+}> => {
   if (!env.S3_BUCKET_NAME) {
     return { available: false, s3Key: null, size: null };
   }
@@ -859,7 +906,8 @@ const exportStatusRoute = createRoute({
   path: "/v1/export/status/{jobId}",
   tags: ["Export Jobs"],
   summary: "Get export job status",
-  description: "Returns current status of an export job. Use for polling-based progress tracking.",
+  description:
+    "Returns current status of an export job. Use for polling-based progress tracking.",
   request: {
     params: z.object({
       jobId: z.string().describe("The job ID returned from /v1/export/create"),
@@ -1051,7 +1099,10 @@ app.openapi(exportProgressRoute, (c) => {
 });
 
 // Helper function for progress messages
-function getProgressMessage(status: string, progress: ExportJobProgress | null): string {
+function getProgressMessage(
+  status: string,
+  progress: ExportJobProgress | null,
+): string {
   if (!progress) {
     switch (status) {
       case "waiting":

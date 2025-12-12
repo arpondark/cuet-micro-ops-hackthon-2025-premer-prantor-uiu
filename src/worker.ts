@@ -133,13 +133,13 @@ async function generatePresignedUrl(s3Key: string): Promise<string> {
 
 // Process the export job
 async function processExportJob(
-  job: Job<ExportJobData, ExportJobResult>
+  job: Job<ExportJobData, ExportJobResult>,
 ): Promise<ExportJobResult> {
   const { jobId, userId, fileIds } = job.data;
   const startTime = Date.now();
 
   console.log(
-    `[Worker] Processing job ${jobId} for user ${userId} with ${String(fileIds.length)} files`
+    `[Worker] Processing job ${jobId} for user ${userId} with ${String(fileIds.length)} files`,
   );
 
   workerActiveJobs.inc();
@@ -192,7 +192,7 @@ async function processExportJob(
       } as ExportJobProgress);
 
       console.log(
-        `[Worker] Job ${jobId}: Processed file ${String(i + 1)}/${String(fileIds.length)} (ID: ${String(fileId)})`
+        `[Worker] Job ${jobId}: Processed file ${String(i + 1)}/${String(fileIds.length)} (ID: ${String(fileId)})`,
       );
     }
 
@@ -232,7 +232,9 @@ async function processExportJob(
 
     await s3Client.send(putCommand);
 
-    console.log(`[Worker] Job ${jobId}: Uploaded export to S3 at ${exportS3Key}`);
+    console.log(
+      `[Worker] Job ${jobId}: Uploaded export to S3 at ${exportS3Key}`,
+    );
 
     // Update progress: Generating URL
     await job.updateProgress({
@@ -257,7 +259,7 @@ async function processExportJob(
 
     const processingTime = (Date.now() - startTime) / 1000;
     console.log(
-      `[Worker] Job ${jobId}: Completed in ${processingTime.toFixed(1)}s`
+      `[Worker] Job ${jobId}: Completed in ${processingTime.toFixed(1)}s`,
     );
 
     workerActiveJobs.dec();
@@ -289,13 +291,13 @@ const worker = new Worker<ExportJobData, ExportJobResult>(
   {
     connection: redisConnection,
     concurrency: env.WORKER_CONCURRENCY,
-  }
+  },
 );
 
 // Worker event handlers
 worker.on("completed", (job, result) => {
   console.log(
-    `[Worker] Job ${String(job.id)} completed. Download URL: ${result.downloadUrl.substring(0, 80)}...`
+    `[Worker] Job ${String(job.id)} completed. Download URL: ${result.downloadUrl.substring(0, 80)}...`,
   );
 });
 
@@ -306,7 +308,7 @@ worker.on("failed", (job, err) => {
 worker.on("progress", (job, progress) => {
   const p = progress as ExportJobProgress;
   console.log(
-    `[Worker] Job ${String(job.id)}: ${String(p.percent)}% - ${p.message}`
+    `[Worker] Job ${String(job.id)}: ${String(p.percent)}% - ${p.message}`,
   );
 });
 
@@ -326,10 +328,10 @@ process.on("SIGTERM", () => void shutdown());
 process.on("SIGINT", () => void shutdown());
 
 console.log(
-  `[Worker] Started with concurrency ${String(env.WORKER_CONCURRENCY)}, connected to Redis at ${env.REDIS_HOST}:${String(env.REDIS_PORT)}`
+  `[Worker] Started with concurrency ${String(env.WORKER_CONCURRENCY)}, connected to Redis at ${env.REDIS_HOST}:${String(env.REDIS_PORT)}`,
 );
 console.log(
-  `[Worker] Processing delays: ${String(env.DOWNLOAD_DELAY_MIN_MS / 1000)}s - ${String(env.DOWNLOAD_DELAY_MAX_MS / 1000)}s (enabled: ${String(env.DOWNLOAD_DELAY_ENABLED)})`
+  `[Worker] Processing delays: ${String(env.DOWNLOAD_DELAY_MIN_MS / 1000)}s - ${String(env.DOWNLOAD_DELAY_MAX_MS / 1000)}s (enabled: ${String(env.DOWNLOAD_DELAY_ENABLED)})`,
 );
 
 const metricsApp = new Hono();
@@ -350,4 +352,6 @@ serve({
   port: METRICS_PORT,
 });
 
-console.log(`[Worker] Metrics server listening on port ${String(METRICS_PORT)}`);
+console.log(
+  `[Worker] Metrics server listening on port ${String(METRICS_PORT)}`,
+);

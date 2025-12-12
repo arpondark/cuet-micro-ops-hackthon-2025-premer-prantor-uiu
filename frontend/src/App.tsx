@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import * as Sentry from '@sentry/react';
-import { trace } from '@opentelemetry/api';
+import { useState, useEffect, useCallback } from "react";
+import * as Sentry from "@sentry/react";
+import { trace } from "@opentelemetry/api";
 import {
   Activity,
   AlertCircle,
@@ -14,17 +14,17 @@ import {
   Server,
   XCircle,
   Zap,
-} from 'lucide-react';
+} from "lucide-react";
 
 // API Configuration (Challenge 4: Sentry + OpenTelemetry + Jaeger)
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-const JAEGER_URL = import.meta.env.VITE_JAEGER_URL || 'http://localhost:16686';
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const JAEGER_URL = import.meta.env.VITE_JAEGER_URL || "http://localhost:16686";
 
 // Types
 interface HealthStatus {
-  status: 'healthy' | 'unhealthy';
+  status: "healthy" | "unhealthy";
   checks: {
-    storage: 'ok' | 'error';
+    storage: "ok" | "error";
   };
 }
 
@@ -57,7 +57,7 @@ interface ErrorLog {
 }
 
 // Get tracer for custom spans
-const tracer = trace.getTracer('delineate-frontend');
+const tracer = trace.getTracer("delineate-frontend");
 
 function App() {
   // State
@@ -66,11 +66,11 @@ function App() {
   const [jobs, setJobs] = useState<ExportJob[]>([]);
   const [errors, setErrors] = useState<ErrorLog[]>([]);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
-  const [fileIds, setFileIds] = useState('10000, 20000, 30000');
+  const [fileIds, setFileIds] = useState("10000, 20000, 30000");
 
   // Fetch health status
   const fetchHealth = useCallback(async () => {
-    const span = tracer.startSpan('fetchHealth');
+    const span = tracer.startSpan("fetchHealth");
     setHealthLoading(true);
     try {
       const response = await fetch(`${API_BASE}/health`);
@@ -79,9 +79,9 @@ function App() {
       setHealth(data);
       span.setStatus({ code: 1 }); // OK
     } catch (error) {
-      console.error('Health check failed:', error);
+      console.error("Health check failed:", error);
       // Sentry.captureException(error); // Optional: don't spam Sentry if backend is down
-      addError('Health check failed: ' + (error as Error).message);
+      addError("Health check failed: " + (error as Error).message);
       setHealth(null);
       span.setStatus({ code: 2, message: (error as Error).message }); // ERROR
     } finally {
@@ -103,15 +103,15 @@ function App() {
 
   // Create export job
   const createExportJob = async () => {
-    const span = tracer.startSpan('createExportJob');
+    const span = tracer.startSpan("createExportJob");
     setIsCreatingJob(true);
 
     try {
-      const ids = fileIds.split(',').map((id) => parseInt(id.trim(), 10));
+      const ids = fileIds.split(",").map((id) => parseInt(id.trim(), 10));
       const response = await fetch(`${API_BASE}/v1/export/create`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_ids: ids, user_id: 'dashboard-user' }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file_ids: ids, user_id: "dashboard-user" }),
       });
 
       if (!response.ok) {
@@ -133,9 +133,12 @@ function App() {
       // Start polling for this job
       pollJobStatus(data.jobId);
     } catch (error) {
-      console.error('Create job failed:', error);
+      console.error("Create job failed:", error);
       Sentry.captureException(error);
-      addError('Create job failed: ' + (error as Error).message, span.spanContext().traceId);
+      addError(
+        "Create job failed: " + (error as Error).message,
+        span.spanContext().traceId,
+      );
       span.setStatus({ code: 2, message: (error as Error).message });
     } finally {
       setIsCreatingJob(false);
@@ -156,22 +159,22 @@ function App() {
           prev.map((job) =>
             job.jobId === jobId
               ? {
-                ...job,
-                status: data.status,
-                progress: data.progress,
-                result: data.result,
-                error: data.error,
-              }
-              : job
-          )
+                  ...job,
+                  status: data.status,
+                  progress: data.progress,
+                  result: data.result,
+                  error: data.error,
+                }
+              : job,
+          ),
         );
 
         // Continue polling if not completed or failed
-        if (data.status !== 'completed' && data.status !== 'failed') {
+        if (data.status !== "completed" && data.status !== "failed") {
           setTimeout(poll, 2000);
         }
       } catch (error) {
-        console.error('Poll failed:', error);
+        console.error("Poll failed:", error);
       }
     };
 
@@ -180,21 +183,27 @@ function App() {
 
   // Trigger Sentry test error
   const triggerSentryTest = async () => {
-    const span = tracer.startSpan('triggerSentryTest');
+    const span = tracer.startSpan("triggerSentryTest");
     try {
       const response = await fetch(
         `${API_BASE}/v1/download/check?sentry_test=true`,
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ file_id: 70000 }),
-        }
+        },
       );
       const data = await response.json();
-      addError(data.message || 'Sentry test error triggered', span.spanContext().traceId);
-      Sentry.captureMessage('Sentry test triggered from dashboard', 'info');
+      addError(
+        data.message || "Sentry test error triggered",
+        span.spanContext().traceId,
+      );
+      Sentry.captureMessage("Sentry test triggered from dashboard", "info");
     } catch (error) {
-      addError('Sentry test failed: ' + (error as Error).message, span.spanContext().traceId);
+      addError(
+        "Sentry test failed: " + (error as Error).message,
+        span.spanContext().traceId,
+      );
       Sentry.captureException(error);
     } finally {
       span.end();
@@ -212,8 +221,6 @@ function App() {
     const interval = setInterval(fetchHealth, 30000);
     return () => clearInterval(interval);
   }, [fetchHealth]);
-
-
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
@@ -267,7 +274,9 @@ function App() {
                 disabled={healthLoading}
                 className="text-slate-400 hover:text-white transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 ${healthLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${healthLoading ? "animate-spin" : ""}`}
+                />
               </button>
             </div>
             {health ? (
@@ -275,10 +284,13 @@ function App() {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Status</span>
                   <span
-                    className={`flex items-center gap-2 font-medium ${health.status === 'healthy' ? 'text-green-400' : 'text-red-400'
-                      }`}
+                    className={`flex items-center gap-2 font-medium ${
+                      health.status === "healthy"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
                   >
-                    {health.status === 'healthy' ? (
+                    {health.status === "healthy" ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
                       <XCircle className="w-4 h-4" />
@@ -289,15 +301,18 @@ function App() {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Storage</span>
                   <span
-                    className={`flex items-center gap-2 font-medium ${health.checks?.storage === 'ok' ? 'text-green-400' : 'text-red-400'
-                      }`}
+                    className={`flex items-center gap-2 font-medium ${
+                      health.checks?.storage === "ok"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
                   >
-                    {health.checks?.storage === 'ok' ? (
+                    {health.checks?.storage === "ok" ? (
                       <CheckCircle2 className="w-4 h-4" />
                     ) : (
                       <XCircle className="w-4 h-4" />
                     )}
-                    {health.checks?.storage || 'unknown'}
+                    {health.checks?.storage || "unknown"}
                   </span>
                 </div>
               </div>
@@ -323,7 +338,9 @@ function App() {
             </h2>
             <div className="space-y-3">
               <div>
-                <label className="text-sm text-slate-400 block mb-1">File IDs (comma-separated)</label>
+                <label className="text-sm text-slate-400 block mb-1">
+                  File IDs (comma-separated)
+                </label>
                 <input
                   type="text"
                   value={fileIds}
@@ -342,7 +359,7 @@ function App() {
                 ) : (
                   <Download className="w-4 h-4" />
                 )}
-                {isCreatingJob ? 'Creating...' : 'Create Job'}
+                {isCreatingJob ? "Creating..." : "Create Job"}
               </button>
             </div>
           </div>
@@ -385,12 +402,13 @@ function App() {
                         {job.jobId.slice(0, 8)}...
                       </span>
                       <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${job.status === 'completed'
-                          ? 'bg-green-500/20 text-green-400'
-                          : job.status === 'failed'
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-yellow-500/20 text-yellow-400'
-                          }`}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          job.status === "completed"
+                            ? "bg-green-500/20 text-green-400"
+                            : job.status === "failed"
+                              ? "bg-red-500/20 text-red-400"
+                              : "bg-yellow-500/20 text-yellow-400"
+                        }`}
                       >
                         {job.status}
                       </span>
@@ -413,7 +431,8 @@ function App() {
                       <div className="mt-2 text-sm text-slate-400 flex items-center gap-2">
                         <CheckCircle2 className="w-4 h-4 text-green-400" />
                         <span>
-                          {job.result.processedFiles} files ({Math.round(job.result.fileSize / 1024)} KB)
+                          {job.result.processedFiles} files (
+                          {Math.round(job.result.fileSize / 1024)} KB)
                         </span>
                         {job.result.downloadUrl && (
                           <a
@@ -460,7 +479,9 @@ function App() {
                     className="bg-red-500/10 border border-red-500/30 rounded-lg p-3"
                   >
                     <div className="flex items-start justify-between">
-                      <span className="text-red-400 text-sm font-medium">{error.message}</span>
+                      <span className="text-red-400 text-sm font-medium">
+                        {error.message}
+                      </span>
                       <span className="text-slate-500 text-xs flex items-center gap-1">
                         <Clock className="w-3 h-3" />
                         {new Date(error.timestamp).toLocaleTimeString()}
@@ -483,11 +504,12 @@ function App() {
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 text-center py-4">No errors captured.</p>
+              <p className="text-slate-500 text-center py-4">
+                No errors captured.
+              </p>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -17,10 +17,11 @@
 > - **Scalability**: Separate worker process, horizontal scaling ready
 >
 > 📊 **Download Processing Time Scenario Implementation**
-> 
+>
 > This architecture handles the variable download processing times shown in the hackathon scenario:
+>
 > - 🟢 **Fast**: 10-15 seconds (Green)
-> - 🟡 **Medium**: 30-60 seconds (Yellow)  
+> - 🟡 **Medium**: 30-60 seconds (Yellow)
 > - 🔴 **Slow**: 60-120 seconds (Red)
 >
 > View real-time metrics at: **http://localhost:3001** (Grafana Dashboard)
@@ -50,16 +51,16 @@ This document outlines the architecture for a **long-running file download micro
 
 ### Key Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| **Architecture Pattern** | Hybrid (Polling + SSE) | Best of both worlds - simple polling for basic clients, SSE for real-time UX |
-| **Storage** | MinIO (S3-compatible) | Self-hosted, production-ready, no vendor lock-in |
-| **Job Queue** | Redis + BullMQ | In-memory speed, persistence, battle-tested |
-| **Logging** | Loki | Integrates seamlessly with Grafana, log aggregation |
-| **Metrics** | Prometheus + prom-client | Industry standard, powerful querying |
-| **Visualization** | Grafana | Unified dashboards for metrics and logs |
-| **Tracing** | Jaeger + OpenTelemetry | Distributed tracing standard |
-| **Orchestration** | Docker Compose | No Kubernetes - simpler, faster for this scale |
+| Decision                 | Choice                   | Rationale                                                                    |
+| ------------------------ | ------------------------ | ---------------------------------------------------------------------------- |
+| **Architecture Pattern** | Hybrid (Polling + SSE)   | Best of both worlds - simple polling for basic clients, SSE for real-time UX |
+| **Storage**              | MinIO (S3-compatible)    | Self-hosted, production-ready, no vendor lock-in                             |
+| **Job Queue**            | Redis + BullMQ           | In-memory speed, persistence, battle-tested                                  |
+| **Logging**              | Loki                     | Integrates seamlessly with Grafana, log aggregation                          |
+| **Metrics**              | Prometheus + prom-client | Industry standard, powerful querying                                         |
+| **Visualization**        | Grafana                  | Unified dashboards for metrics and logs                                      |
+| **Tracing**              | Jaeger + OpenTelemetry   | Distributed tracing standard                                                 |
+| **Orchestration**        | Docker Compose           | No Kubernetes - simpler, faster for this scale                               |
 
 ### Prometheus Metrics Implemented
 
@@ -129,47 +130,47 @@ download_processing_seconds{file_id, status}  - Processing time histogram
 │                        DOWNLOAD REQUEST FLOW                                         │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 
-  ┌──────────┐                                                              
-  │  Client  │                                                              
-  └────┬─────┘                                                              
-       │                                                                    
-       │ 1. POST /v1/export                                      
-       │    { file_ids: [70000, 70001] }                                    
-       ▼                                                                    
-  ┌──────────┐     ┌───────────────┐     ┌───────────────┐                 
-  │  Nginx   │────▶│   Hono API    │────▶│    Redis      │                 
-  │  Proxy   │     │   (Node.js)   │     │   (BullMQ)    │                 
-  └──────────┘     └───────┬───────┘     └───────┬───────┘                 
-                           │                     │                         
-       │ 2. Response:      │                     │                         
-       │    { jobId: "abc" │                     │                         
-       │      status: "queued" }                 │                         
-       ▼                   │                     │                         
-  ┌──────────┐             │                     ▼                         
-  │  Client  │             │             ┌───────────────┐                 
-  └────┬─────┘             │             │    Worker     │                 
-       │                   │             │   (BullMQ)    │                 
-       │ 3. GET /v1/download/status/:jobId              │                  
-       │    OR                           │               │                 
-       │    GET /v1/download/subscribe/:jobId (SSE)     │                  
-       ▼                   │             │               │                 
-  ┌──────────┐             │             │  4. Process   │                 
-  │  Nginx   │────▶────────┘             │     Download  │                 
-  │  Proxy   │                           │               │                 
-  └────┬─────┘                           │               ▼                 
-       │                                 │       ┌───────────────┐         
-       │ 5. Poll Response:               │       │     MinIO     │         
-       │    { status: "processing",      │       │   (S3 Store)  │         
-       │      progress: 45% }            │       └───────────────┘         
-       │                                 │                                 
-       │ 6. Final Response:              │                                 
-       │    { status: "completed",       │                                 
-       │      downloadUrl: "presigned"   │                                 
-       │    }                            │                                 
-       ▼                                 │                                 
-  ┌──────────┐                           │                                 
-  │  Client  │◀──────────────────────────┘                                 
-  └──────────┘                                                             
+  ┌──────────┐
+  │  Client  │
+  └────┬─────┘
+       │
+       │ 1. POST /v1/export
+       │    { file_ids: [70000, 70001] }
+       ▼
+  ┌──────────┐     ┌───────────────┐     ┌───────────────┐
+  │  Nginx   │────▶│   Hono API    │────▶│    Redis      │
+  │  Proxy   │     │   (Node.js)   │     │   (BullMQ)    │
+  └──────────┘     └───────┬───────┘     └───────┬───────┘
+                           │                     │
+       │ 2. Response:      │                     │
+       │    { jobId: "abc" │                     │
+       │      status: "queued" }                 │
+       ▼                   │                     │
+  ┌──────────┐             │                     ▼
+  │  Client  │             │             ┌───────────────┐
+  └────┬─────┘             │             │    Worker     │
+       │                   │             │   (BullMQ)    │
+       │ 3. GET /v1/download/status/:jobId              │
+       │    OR                           │               │
+       │    GET /v1/download/subscribe/:jobId (SSE)     │
+       ▼                   │             │               │
+  ┌──────────┐             │             │  4. Process   │
+  │  Nginx   │────▶────────┘             │     Download  │
+  │  Proxy   │                           │               │
+  └────┬─────┘                           │               ▼
+       │                                 │       ┌───────────────┐
+       │ 5. Poll Response:               │       │     MinIO     │
+       │    { status: "processing",      │       │   (S3 Store)  │
+       │      progress: 45% }            │       └───────────────┘
+       │                                 │
+       │ 6. Final Response:              │
+       │    { status: "completed",       │
+       │      downloadUrl: "presigned"   │
+       │    }                            │
+       ▼                                 │
+  ┌──────────┐                           │
+  │  Client  │◀──────────────────────────┘
+  └──────────┘
 
 
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
@@ -216,12 +217,12 @@ download_processing_seconds{file_id, status}  - Processing time histogram
 
 #### Hono API Server (Node.js)
 
-| Property | Value |
-|----------|-------|
-| **Framework** | Hono (ultra-fast web framework) |
-| **Runtime** | Node.js 24 with native TypeScript |
-| **Port** | 3000 |
-| **Features** | OpenAPI docs, rate limiting, security headers |
+| Property      | Value                                         |
+| ------------- | --------------------------------------------- |
+| **Framework** | Hono (ultra-fast web framework)               |
+| **Runtime**   | Node.js 24 with native TypeScript             |
+| **Port**      | 3000                                          |
+| **Features**  | OpenAPI docs, rate limiting, security headers |
 
 ```typescript
 // Key responsibilities:
@@ -235,65 +236,65 @@ download_processing_seconds{file_id, status}  - Processing time histogram
 
 #### Nginx Reverse Proxy
 
-| Property | Value |
-|----------|-------|
-| **Port** | 80 (HTTP), 443 (HTTPS) |
-| **Timeout** | 300s for long-polling |
+| Property     | Value                                      |
+| ------------ | ------------------------------------------ |
+| **Port**     | 80 (HTTP), 443 (HTTPS)                     |
+| **Timeout**  | 300s for long-polling                      |
 | **Features** | Load balancing, SSL termination, buffering |
 
 ### 2. Data Layer
 
 #### Redis (Job Queue & Cache)
 
-| Property | Value |
-|----------|-------|
-| **Port** | 6379 |
-| **Purpose** | BullMQ job queue, session cache |
-| **Persistence** | RDB snapshots + AOF |
+| Property        | Value                           |
+| --------------- | ------------------------------- |
+| **Port**        | 6379                            |
+| **Purpose**     | BullMQ job queue, session cache |
+| **Persistence** | RDB snapshots + AOF             |
 
 #### MinIO (S3-Compatible Storage)
 
-| Property | Value |
-|----------|-------|
-| **API Port** | 9000 |
-| **Console Port** | 9001 |
-| **Bucket** | `downloads` |
-| **Features** | Presigned URLs, lifecycle policies |
+| Property         | Value                              |
+| ---------------- | ---------------------------------- |
+| **API Port**     | 9000                               |
+| **Console Port** | 9001                               |
+| **Bucket**       | `downloads`                        |
+| **Features**     | Presigned URLs, lifecycle policies |
 
 ### 3. Observability Layer
 
 #### Prometheus (Metrics)
 
-| Property | Value |
-|----------|-------|
-| **Port** | 9090 |
-| **Scrape Interval** | 15s |
-| **Retention** | 15 days |
-| **Targets** | API, Workers, Nginx, MinIO |
+| Property            | Value                      |
+| ------------------- | -------------------------- |
+| **Port**            | 9090                       |
+| **Scrape Interval** | 15s                        |
+| **Retention**       | 15 days                    |
+| **Targets**         | API, Workers, Nginx, MinIO |
 
 #### Loki (Logs)
 
-| Property | Value |
-|----------|-------|
-| **Port** | 3100 |
-| **Retention** | 7 days |
-| **Sources** | All containers via Docker driver |
+| Property      | Value                            |
+| ------------- | -------------------------------- |
+| **Port**      | 3100                             |
+| **Retention** | 7 days                           |
+| **Sources**   | All containers via Docker driver |
 
 #### Grafana (Visualization)
 
-| Property | Value |
-|----------|-------|
-| **Port** | 3001 |
-| **Data Sources** | Prometheus, Loki, Jaeger |
-| **Features** | Pre-configured dashboards |
+| Property         | Value                     |
+| ---------------- | ------------------------- |
+| **Port**         | 3001                      |
+| **Data Sources** | Prometheus, Loki, Jaeger  |
+| **Features**     | Pre-configured dashboards |
 
 #### Jaeger (Distributed Tracing)
 
-| Property | Value |
-|----------|-------|
-| **UI Port** | 16686 |
-| **OTLP Port** | 4318 |
-| **Features** | OpenTelemetry collector built-in |
+| Property      | Value                            |
+| ------------- | -------------------------------- |
+| **UI Port**   | 16686                            |
+| **OTLP Port** | 4318                             |
+| **Features**  | OpenTelemetry collector built-in |
 
 ---
 
@@ -332,7 +333,7 @@ POLLING PATH:                          SSE PATH:
 4. Response: {                         4. Server pushes events:
      status: "processing",                event: progress
      progress: 45                         data: { progress: 45 }
-   }                                      
+   }
 5. When completed:                     5. event: completed
    { status: "completed",                 data: { downloadUrl: "..." }
      downloadUrl: "..." }
@@ -340,13 +341,13 @@ POLLING PATH:                          SSE PATH:
 
 ### Why Hybrid?
 
-| Requirement | Polling | SSE | Hybrid |
-|-------------|---------|-----|--------|
-| Simple clients | ✅ | ❌ | ✅ |
-| Real-time UX | ❌ | ✅ | ✅ |
-| Proxy compatibility | ✅ | ⚠️ | ✅ |
-| Connection efficiency | ❌ | ✅ | ✅ |
-| Graceful degradation | ❌ | ❌ | ✅ |
+| Requirement           | Polling | SSE | Hybrid |
+| --------------------- | ------- | --- | ------ |
+| Simple clients        | ✅      | ❌  | ✅     |
+| Real-time UX          | ❌      | ✅  | ✅     |
+| Proxy compatibility   | ✅      | ⚠️  | ✅     |
+| Connection efficiency | ❌      | ✅  | ✅     |
+| Graceful degradation  | ❌      | ❌  | ✅     |
 
 ### Job Processing Flow
 
@@ -407,45 +408,49 @@ user:{userId}:jobs   → 7 days
 
 ```typescript
 // Worker Configuration
-const exportQueue = new Queue('file-exports', {
+const exportQueue = new Queue("file-exports", {
   connection: redis,
   defaultJobOptions: {
     attempts: 3,
     backoff: {
-      type: 'exponential',
-      delay: 5000,  // Start with 5s, then 10s, 20s
+      type: "exponential",
+      delay: 5000, // Start with 5s, then 10s, 20s
     },
     removeOnComplete: {
-      age: 86400,   // Keep completed jobs for 24h
-      count: 1000,  // Keep last 1000 jobs
+      age: 86400, // Keep completed jobs for 24h
+      count: 1000, // Keep last 1000 jobs
     },
     removeOnFail: {
-      age: 604800,  // Keep failed jobs for 7 days
+      age: 604800, // Keep failed jobs for 7 days
     },
   },
 });
 
 // Worker Process
-const worker = new Worker('file-exports', async (job) => {
-  const { fileIds, userId } = job.data;
-  
-  // Update progress during processing
-  await job.updateProgress({
-    percent: 0,
-    currentFile: 0,
-    totalFiles: fileIds.length,
-    stage: "processing",
-    message: "Starting export..."
-  });
-  
-  // Simulate/perform download processing and S3 upload
-  const result = await processExportJob(job);
-  
-  return result;
-}, {
-  connection: redis,
-  concurrency: 3,  // Process 3 jobs simultaneously
-});
+const worker = new Worker(
+  "file-exports",
+  async (job) => {
+    const { fileIds, userId } = job.data;
+
+    // Update progress during processing
+    await job.updateProgress({
+      percent: 0,
+      currentFile: 0,
+      totalFiles: fileIds.length,
+      stage: "processing",
+      message: "Starting export...",
+    });
+
+    // Simulate/perform download processing and S3 upload
+    const result = await processExportJob(job);
+
+    return result;
+  },
+  {
+    connection: redis,
+    concurrency: 3, // Process 3 jobs simultaneously
+  },
+);
 ```
 
 ### Error Handling & Retry Logic
@@ -762,7 +767,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Request-ID $request_id;
-        
+
         # Standard timeout
         proxy_read_timeout 30s;
         proxy_connect_timeout 10s;
@@ -775,12 +780,12 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Connection '';
-        
+
         # SSE specific settings
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 600s;  # 10 minutes
-        
+
         # Chunked encoding for SSE
         chunked_transfer_encoding on;
     }
@@ -791,7 +796,7 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
-        
+
         proxy_read_timeout 60s;
     }
 
@@ -841,11 +846,11 @@ Settings:
 
 ```typescript
 // hooks/useDownload.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
 interface DownloadJob {
   jobId: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  status: "queued" | "processing" | "completed" | "failed";
   progress: number;
   downloadUrl?: string;
   error?: string;
@@ -858,55 +863,63 @@ export function useDownload() {
   // Initiate download
   const initiateDownload = useCallback(async (fileIds: number[]) => {
     setIsLoading(true);
-    
-    const response = await fetch('/v1/export', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+
+    const response = await fetch("/v1/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ file_ids: fileIds }),
     });
-    
+
     const data = await response.json();
     setJob({ ...data, progress: 0 });
     setIsLoading(false);
-    
+
     // Start SSE subscription
     subscribeToUpdates(data.jobId);
-    
+
     return data;
   }, []);
 
   // SSE subscription with fallback to polling
   const subscribeToUpdates = useCallback((jobId: string) => {
     // Try SSE first
-    if (typeof EventSource !== 'undefined') {
+    if (typeof EventSource !== "undefined") {
       const eventSource = new EventSource(`/v1/download/subscribe/${jobId}`);
-      
-      eventSource.addEventListener('progress', (e) => {
+
+      eventSource.addEventListener("progress", (e) => {
         const data = JSON.parse(e.data);
-        setJob(prev => prev ? { ...prev, ...data } : null);
+        setJob((prev) => (prev ? { ...prev, ...data } : null));
       });
-      
-      eventSource.addEventListener('completed', (e) => {
+
+      eventSource.addEventListener("completed", (e) => {
         const data = JSON.parse(e.data);
-        setJob(prev => prev ? { 
-          ...prev, 
-          status: 'completed',
-          progress: 100,
-          downloadUrl: data.downloadUrl 
-        } : null);
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "completed",
+                progress: 100,
+                downloadUrl: data.downloadUrl,
+              }
+            : null,
+        );
         eventSource.close();
       });
-      
-      eventSource.addEventListener('failed', (e) => {
+
+      eventSource.addEventListener("failed", (e) => {
         const data = JSON.parse(e.data);
-        setJob(prev => prev ? { 
-          ...prev, 
-          status: 'failed',
-          error: data.error 
-        } : null);
+        setJob((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: "failed",
+                error: data.error,
+              }
+            : null,
+        );
         eventSource.close();
       });
-      
+
       eventSource.onerror = () => {
         eventSource.close();
         // Fallback to polling
@@ -923,25 +936,25 @@ export function useDownload() {
     const poll = async () => {
       const response = await fetch(`/v1/download/status/${jobId}`);
       const data = await response.json();
-      
+
       setJob(data);
-      
-      if (data.status === 'queued' || data.status === 'processing') {
-        setTimeout(poll, 2000);  // Poll every 2 seconds
+
+      if (data.status === "queued" || data.status === "processing") {
+        setTimeout(poll, 2000); // Poll every 2 seconds
       }
     };
-    
+
     poll();
   }, []);
 
   // Cancel download
   const cancelDownload = useCallback(async () => {
     if (!job?.jobId) return;
-    
+
     await fetch(`/v1/download/${job.jobId}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
-    
+
     setJob(null);
   }, [job?.jobId]);
 
@@ -958,7 +971,7 @@ export function useDownload() {
 
 ```tsx
 // components/DownloadProgress.tsx
-import { useDownload } from '../hooks/useDownload';
+import { useDownload } from "../hooks/useDownload";
 
 export function DownloadProgress() {
   const { job, isLoading, initiateDownload, cancelDownload } = useDownload();
@@ -966,49 +979,43 @@ export function DownloadProgress() {
   return (
     <div className="download-container">
       {!job && (
-        <button 
+        <button
           onClick={() => initiateDownload([70000, 70001])}
           disabled={isLoading}
         >
-          {isLoading ? 'Starting...' : 'Start Download'}
+          {isLoading ? "Starting..." : "Start Download"}
         </button>
       )}
-      
+
       {job && (
         <div className="progress-card">
           <div className="status-badge" data-status={job.status}>
             {job.status.toUpperCase()}
           </div>
-          
+
           <div className="progress-bar">
-            <div 
-              className="progress-fill" 
+            <div
+              className="progress-fill"
               style={{ width: `${job.progress}%` }}
             />
           </div>
-          
+
           <span className="progress-text">{job.progress}%</span>
-          
-          {job.status === 'completed' && job.downloadUrl && (
-            <a 
-              href={job.downloadUrl} 
-              className="download-button"
-              download
-            >
+
+          {job.status === "completed" && job.downloadUrl && (
+            <a href={job.downloadUrl} className="download-button" download>
               Download File
             </a>
           )}
-          
-          {job.status === 'failed' && (
+
+          {job.status === "failed" && (
             <div className="error-message">
               Error: {job.error}
-              <button onClick={() => initiateDownload([70000])}>
-                Retry
-              </button>
+              <button onClick={() => initiateDownload([70000])}>Retry</button>
             </div>
           )}
-          
-          {(job.status === 'queued' || job.status === 'processing') && (
+
+          {(job.status === "queued" || job.status === "processing") && (
             <button onClick={cancelDownload} className="cancel-button">
               Cancel
             </button>
@@ -1030,23 +1037,24 @@ class DownloadManager {
 
   // Handle browser close during download
   setupUnloadHandler() {
-    window.addEventListener('beforeunload', (e) => {
+    window.addEventListener("beforeunload", (e) => {
       if (this.activeJobs.size > 0) {
         e.preventDefault();
-        e.returnValue = 'Downloads in progress. Are you sure you want to leave?';
+        e.returnValue =
+          "Downloads in progress. Are you sure you want to leave?";
       }
     });
   }
 
   // Handle network reconnection
   setupNetworkHandler(jobId: string) {
-    window.addEventListener('online', () => {
-      console.log('Network restored, resuming job status...');
+    window.addEventListener("online", () => {
+      console.log("Network restored, resuming job status...");
       this.resubscribe(jobId);
     });
 
-    window.addEventListener('offline', () => {
-      console.log('Network lost, pausing updates...');
+    window.addEventListener("offline", () => {
+      console.log("Network lost, pausing updates...");
       this.closeConnection(jobId);
     });
   }
@@ -1054,12 +1062,12 @@ class DownloadManager {
   // Handle concurrent downloads
   async initiateMultiple(fileIdGroups: number[][]) {
     const jobs = await Promise.all(
-      fileIdGroups.map(fileIds => 
-        fetch('/v1/export', {
-          method: 'POST',
+      fileIdGroups.map((fileIds) =>
+        fetch("/v1/export", {
+          method: "POST",
           body: JSON.stringify({ file_ids: fileIds }),
-        }).then(r => r.json())
-      )
+        }).then((r) => r.json()),
+      ),
     );
 
     return jobs;
@@ -1169,18 +1177,18 @@ Production:
 
 ## Service Port Summary
 
-| Service | Internal Port | External Port | Purpose |
-|---------|---------------|---------------|---------|
-| **Nginx** | 80 | 80 | HTTP Reverse Proxy |
-| **Hono API** | 3000 | 3000 (dev only) | Application Server |
-| **MinIO API** | 9000 | 9000 | S3-Compatible Storage |
-| **MinIO Console** | 9001 | 9001 | Storage Admin UI |
-| **Redis** | 6379 | 6379 (dev only) | Job Queue & Cache |
-| **Prometheus** | 9090 | 9090 | Metrics Collection |
-| **Loki** | 3100 | 3100 | Log Aggregation |
-| **Grafana** | 3000 | 3001 | Dashboards |
-| **Jaeger** | 16686 | 16686 | Tracing UI |
-| **Jaeger OTLP** | 4318 | 4318 | Trace Collection |
+| Service           | Internal Port | External Port   | Purpose               |
+| ----------------- | ------------- | --------------- | --------------------- |
+| **Nginx**         | 80            | 80              | HTTP Reverse Proxy    |
+| **Hono API**      | 3000          | 3000 (dev only) | Application Server    |
+| **MinIO API**     | 9000          | 9000            | S3-Compatible Storage |
+| **MinIO Console** | 9001          | 9001            | Storage Admin UI      |
+| **Redis**         | 6379          | 6379 (dev only) | Job Queue & Cache     |
+| **Prometheus**    | 9090          | 9090            | Metrics Collection    |
+| **Loki**          | 3100          | 3100            | Log Aggregation       |
+| **Grafana**       | 3000          | 3001            | Dashboards            |
+| **Jaeger**        | 16686         | 16686           | Tracing UI            |
+| **Jaeger OTLP**   | 4318          | 4318            | Trace Collection      |
 
 ---
 
@@ -1207,26 +1215,26 @@ docker compose -f docker/compose.prod.yml up --build -d
 
 ### A. Technology Decision Matrix
 
-| Category | Options Considered | Selected | Rationale |
-|----------|-------------------|----------|-----------|
-| **Web Framework** | Express, Fastify, Hono | Hono | Ultra-fast, native TS, modern API |
-| **Job Queue** | BullMQ, Agenda, Bee | BullMQ | Redis-backed, reliable, feature-rich |
-| **S3 Storage** | MinIO, SeaweedFS, LocalStack | MinIO | Production-ready, S3 compatible |
-| **Metrics** | Prometheus, InfluxDB, Graphite | Prometheus | Industry standard, PromQL power |
-| **Logging** | Loki, ELK, Graylog | Loki | Grafana native, lightweight |
-| **Tracing** | Jaeger, Zipkin, Tempo | Jaeger | Mature, great UI, OTLP support |
-| **Orchestration** | Kubernetes, Docker Compose, Nomad | Docker Compose | Simple, sufficient for scale |
+| Category          | Options Considered                | Selected       | Rationale                            |
+| ----------------- | --------------------------------- | -------------- | ------------------------------------ |
+| **Web Framework** | Express, Fastify, Hono            | Hono           | Ultra-fast, native TS, modern API    |
+| **Job Queue**     | BullMQ, Agenda, Bee               | BullMQ         | Redis-backed, reliable, feature-rich |
+| **S3 Storage**    | MinIO, SeaweedFS, LocalStack      | MinIO          | Production-ready, S3 compatible      |
+| **Metrics**       | Prometheus, InfluxDB, Graphite    | Prometheus     | Industry standard, PromQL power      |
+| **Logging**       | Loki, ELK, Graylog                | Loki           | Grafana native, lightweight          |
+| **Tracing**       | Jaeger, Zipkin, Tempo             | Jaeger         | Mature, great UI, OTLP support       |
+| **Orchestration** | Kubernetes, Docker Compose, Nomad | Docker Compose | Simple, sufficient for scale         |
 
 ### B. Glossary
 
-| Term | Definition |
-|------|------------|
-| **SSE** | Server-Sent Events - unidirectional server-to-client streaming |
-| **BullMQ** | Node.js message queue library built on Redis |
-| **Presigned URL** | Time-limited URL granting temporary access to S3 objects |
-| **OTLP** | OpenTelemetry Protocol for transmitting telemetry data |
-| **PromQL** | Prometheus Query Language for metric analysis |
+| Term              | Definition                                                     |
+| ----------------- | -------------------------------------------------------------- |
+| **SSE**           | Server-Sent Events - unidirectional server-to-client streaming |
+| **BullMQ**        | Node.js message queue library built on Redis                   |
+| **Presigned URL** | Time-limited URL granting temporary access to S3 objects       |
+| **OTLP**          | OpenTelemetry Protocol for transmitting telemetry data         |
+| **PromQL**        | Prometheus Query Language for metric analysis                  |
 
 ---
 
-*Document Version: 1.0 | Last Updated: December 12, 2025*
+_Document Version: 1.0 | Last Updated: December 12, 2025_

@@ -70,10 +70,10 @@ This document details the complete CI/CD pipeline implementation for the Delinea
 
 ### Trigger Events
 
-| Event | Branches | Description |
-|-------|----------|-------------|
-| `push` | `main`, `master` | Runs on direct pushes to main branches |
-| `pull_request` | `main`, `master` | Runs on PRs targeting main branches |
+| Event          | Branches         | Description                            |
+| -------------- | ---------------- | -------------------------------------- |
+| `push`         | `main`, `master` | Runs on direct pushes to main branches |
+| `pull_request` | `main`, `master` | Runs on PRs targeting main branches    |
 
 ### Pipeline Stages
 
@@ -81,12 +81,13 @@ This document details the complete CI/CD pipeline implementation for the Delinea
 
 **Purpose**: Ensure code quality and consistent formatting
 
-| Check | Command | Description |
-|-------|---------|-------------|
-| ESLint | `npm run lint` | Static code analysis for TypeScript |
-| Prettier | `npm run format:check` | Code formatting verification |
+| Check    | Command                | Description                         |
+| -------- | ---------------------- | ----------------------------------- |
+| ESLint   | `npm run lint`         | Static code analysis for TypeScript |
+| Prettier | `npm run format:check` | Code formatting verification        |
 
 **Features**:
+
 - Uses Node.js 24 with npm caching
 - Fast startup with cached dependencies
 - Clear error messages on failures
@@ -95,11 +96,12 @@ This document details the complete CI/CD pipeline implementation for the Delinea
 
 **Purpose**: Validate application functionality
 
-| Test Suite | Command | Environment |
-|------------|---------|-------------|
+| Test Suite | Command            | Environment                       |
+| ---------- | ------------------ | --------------------------------- |
 | End-to-End | `npm run test:e2e` | Development mode with test config |
 
 **Environment Variables**:
+
 ```yaml
 NODE_ENV: development
 PORT: 3000
@@ -115,12 +117,13 @@ CORS_ORIGINS: "*"
 
 **Purpose**: Identify vulnerabilities in code and dependencies
 
-| Scanner | Target | Description |
-|---------|--------|-------------|
-| npm audit | Dependencies | Checks for known vulnerabilities |
-| CodeQL | Source code | Static analysis for security issues |
+| Scanner   | Target       | Description                         |
+| --------- | ------------ | ----------------------------------- |
+| npm audit | Dependencies | Checks for known vulnerabilities    |
+| CodeQL    | Source code  | Static analysis for security issues |
 
 **Permissions Required**:
+
 - `actions: read`
 - `contents: read`
 - `security-events: write`
@@ -129,14 +132,15 @@ CORS_ORIGINS: "*"
 
 **Purpose**: Create production-ready container image
 
-| Feature | Implementation |
-|---------|----------------|
-| Multi-platform | Docker Buildx |
-| Caching | GitHub Actions cache |
-| Image tagging | SHA, branch, latest |
+| Feature        | Implementation              |
+| -------------- | --------------------------- |
+| Multi-platform | Docker Buildx               |
+| Caching        | GitHub Actions cache        |
+| Image tagging  | SHA, branch, latest         |
 | Container scan | Trivy vulnerability scanner |
 
 **Build Tags**:
+
 - `delineate-api:${SHA}` - Commit-specific tag
 - `delineate-api:main` - Branch tag
 - `delineate-api:latest` - Latest on main branch
@@ -146,6 +150,7 @@ CORS_ORIGINS: "*"
 **Purpose**: Deploy to production environment
 
 Supported platforms (templates included):
+
 - **Railway**: `bervProject/railway-deploy@main`
 - **Render**: Webhook-based deployment
 - **Fly.io**: `superfly/flyctl-actions/setup-flyctl@master`
@@ -154,6 +159,7 @@ Supported platforms (templates included):
 #### Notifications (📢) - Optional
 
 Supported channels:
+
 - **Slack**: `8398a7/action-slack@v3`
 - **Discord**: `sarisia/actions-status-discord@v1`
 
@@ -170,6 +176,7 @@ Supported channels:
 ```
 
 **Benefits**:
+
 - 60-80% faster dependency installation
 - Reduced CI costs
 - More reliable builds
@@ -183,6 +190,7 @@ concurrency:
 ```
 
 **Benefits**:
+
 - Cancels outdated runs automatically
 - Saves compute resources
 - Faster feedback on latest changes
@@ -201,6 +209,7 @@ cache-to: type=gha,mode=max
 ```
 
 **Benefits**:
+
 - 50-70% faster Docker builds
 - Reduced bandwidth usage
 - Consistent builds
@@ -212,6 +221,7 @@ echo "## 📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
 ```
 
 **Provides**:
+
 - Visual status of all stages
 - Commit and branch information
 - Actor who triggered the build
@@ -223,6 +233,7 @@ echo "## 📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
 **Languages**: JavaScript, TypeScript
 
 **Checks**:
+
 - SQL injection
 - Cross-site scripting (XSS)
 - Path traversal
@@ -235,6 +246,7 @@ echo "## 📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
 **Severity Levels**: CRITICAL, HIGH
 
 **Checks**:
+
 - OS package vulnerabilities
 - Application dependencies
 - Misconfigurations
@@ -247,6 +259,7 @@ echo "## 📊 CI/CD Pipeline Summary" >> $GITHUB_STEP_SUMMARY
 **Level**: HIGH and above
 
 **Checks**:
+
 - Known vulnerabilities in npm packages
 - Outdated dependencies with security issues
 
@@ -282,21 +295,21 @@ npm run lint && npm run format:check && npm run test:e2e
 
 ### Required Files
 
-| File | Purpose |
-|------|---------|
-| `.github/workflows/ci.yml` | GitHub Actions workflow |
-| `docker/Dockerfile.prod` | Production Docker image |
-| `package.json` | npm scripts and dependencies |
-| `eslint.config.mjs` | ESLint configuration |
+| File                       | Purpose                      |
+| -------------------------- | ---------------------------- |
+| `.github/workflows/ci.yml` | GitHub Actions workflow      |
+| `docker/Dockerfile.prod`   | Production Docker image      |
+| `package.json`             | npm scripts and dependencies |
+| `eslint.config.mjs`        | ESLint configuration         |
 
 ### Environment Variables for CI
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment mode | `development` |
-| `PORT` | Server port | `3000` |
-| `S3_REGION` | AWS region | `us-east-1` |
-| `REQUEST_TIMEOUT_MS` | Request timeout | `30000` |
+| Variable             | Description      | Default       |
+| -------------------- | ---------------- | ------------- |
+| `NODE_ENV`           | Environment mode | `development` |
+| `PORT`               | Server port      | `3000`        |
+| `S3_REGION`          | AWS region       | `us-east-1`   |
+| `REQUEST_TIMEOUT_MS` | Request timeout  | `30000`       |
 
 ## Enabling Optional Features
 
@@ -383,13 +396,13 @@ Security scans may show warnings but won't fail the build (configured with `cont
 
 ### Expected Performance
 
-| Stage | Duration (cached) | Duration (no cache) |
-|-------|-------------------|---------------------|
-| Lint | ~30s | ~90s |
-| Test | ~60s | ~120s |
-| Security | ~90s | ~120s |
-| Build | ~60s | ~180s |
-| **Total** | **~4 min** | **~8 min** |
+| Stage     | Duration (cached) | Duration (no cache) |
+| --------- | ----------------- | ------------------- |
+| Lint      | ~30s              | ~90s                |
+| Test      | ~60s              | ~120s               |
+| Security  | ~90s              | ~120s               |
+| Build     | ~60s              | ~180s               |
+| **Total** | **~4 min**        | **~8 min**          |
 
 ### Cost Optimization
 
@@ -406,6 +419,6 @@ This CI/CD pipeline provides:
 ✅ **Fast Feedback**: Caching and parallelization for quick results  
 ✅ **Deployment Ready**: Templates for major cloud platforms  
 ✅ **Team Communication**: Slack/Discord notification support  
-✅ **Best Practices**: Industry-standard GitHub Actions patterns  
+✅ **Best Practices**: Industry-standard GitHub Actions patterns
 
 The pipeline ensures code quality and security while maintaining developer productivity through fast, reliable builds.

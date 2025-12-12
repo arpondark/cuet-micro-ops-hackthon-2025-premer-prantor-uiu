@@ -61,13 +61,13 @@ export const exportQueue = new Queue<ExportJobData, ExportJobResult>(
         age: 604800, // Keep failed jobs for 7 days
       },
     },
-  }
+  },
 );
 
 // Add job to queue
 export async function addExportJob(
   userId: string,
-  fileIds: number[]
+  fileIds: number[],
 ): Promise<Job<ExportJobData, ExportJobResult>> {
   const jobId = crypto.randomUUID();
   const jobData: ExportJobData = {
@@ -82,7 +82,7 @@ export async function addExportJob(
   });
 
   console.log(
-    `[Queue] Added export job ${jobId} for user ${userId} with ${String(fileIds.length)} files`
+    `[Queue] Added export job ${jobId} for user ${userId} with ${String(fileIds.length)} files`,
   );
 
   return job;
@@ -90,7 +90,7 @@ export async function addExportJob(
 
 // Get job by ID
 export async function getExportJob(
-  jobId: string
+  jobId: string,
 ): Promise<Job<ExportJobData, ExportJobResult> | undefined> {
   return await exportQueue.getJob(jobId);
 }
@@ -132,4 +132,6 @@ export async function closeQueue(): Promise<void> {
   await redisConnection.quit();
 }
 
-console.log(`[Queue] Export queue initialized, connecting to Redis at ${REDIS_HOST}:${String(REDIS_PORT)}`);
+console.log(
+  `[Queue] Export queue initialized, connecting to Redis at ${REDIS_HOST}:${String(REDIS_PORT)}`,
+);

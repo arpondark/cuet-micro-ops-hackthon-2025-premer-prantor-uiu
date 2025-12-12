@@ -55,7 +55,7 @@ jobs:
   test:
     name: 🧪 E2E Tests
     runs-on: ubuntu-24.04
-    needs: lint  # Must pass lint first
+    needs: lint # Must pass lint first
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v4
@@ -90,7 +90,7 @@ jobs:
   build:
     name: 🐳 Build Docker Image
     runs-on: ubuntu-24.04
-    needs: test  # Must pass test first
+    needs: test # Must pass test first
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       image-digest: ${{ steps.build.outputs.digest }}
@@ -141,7 +141,7 @@ jobs:
   deploy:
     name: 🚀 Deploy to Docker Hub
     runs-on: ubuntu-24.04
-    needs: build  # Must pass build first
+    needs: build # Must pass build first
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - name: 📥 Checkout code

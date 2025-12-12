@@ -47,34 +47,34 @@ curl -X POST http://localhost:3000/v1/export/create \
 
 ## Hackathon Challenges
 
-| Challenge                           | Max Points | Difficulty | Status |
-| ----------------------------------- | ---------- | ---------- | ------ |
+| Challenge                           | Max Points | Difficulty | Status  |
+| ----------------------------------- | ---------- | ---------- | ------- |
 | Challenge 1: S3 Storage Integration | 15         | Medium     | ✅ DONE |
 | Challenge 2: Architecture Design    | 15         | Hard       | ✅ DONE |
 | Challenge 3: CI/CD Pipeline         | 10         | Medium     | ✅ DONE |
 | Challenge 4: Observability (Bonus)  | 10         | Hard       | ✅ DONE |
-| **Maximum Total**                   | **50**     |            | **50** |
+| **Maximum Total**                   | **50**     |            | **50**  |
 
 ### 📊 Implementation Summary
 
-| Document | Description |
-|----------|-------------|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Complete architecture design document |
-| [CHALLENGE2_COMPLETED.md](CHALLENGE2_COMPLETED.md) | Challenge 2 completion details |
-| [CHALLENGE3_COMPLETED.md](CHALLENGE3_COMPLETED.md) | CI/CD Pipeline implementation details |
-| [CHALLENGE4_COMPLETED.md](CHALLENGE4_COMPLETED.md) | Observability Dashboard implementation |
-| [QUICKSTART.md](QUICKSTART.md) | Quick start guide |
-| [STACK.md](STACK.md) | Technology stack documentation |
-| [.github/workflows/ci.yml](.github/workflows/ci.yml) | GitHub Actions CI/CD workflow |
+| Document                                             | Description                            |
+| ---------------------------------------------------- | -------------------------------------- |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | Complete architecture design document  |
+| [CHALLENGE2_COMPLETED.md](CHALLENGE2_COMPLETED.md)   | Challenge 2 completion details         |
+| [CHALLENGE3_COMPLETED.md](CHALLENGE3_COMPLETED.md)   | CI/CD Pipeline implementation details  |
+| [CHALLENGE4_COMPLETED.md](CHALLENGE4_COMPLETED.md)   | Observability Dashboard implementation |
+| [QUICKSTART.md](QUICKSTART.md)                       | Quick start guide                      |
+| [STACK.md](STACK.md)                                 | Technology stack documentation         |
+| [.github/workflows/ci.yml](.github/workflows/ci.yml) | GitHub Actions CI/CD workflow          |
 
 ### 🚀 Quick Access URLs
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| **Dashboard** | http://localhost:5173 | - |
-| API Docs | http://localhost:3000/docs | - |
-| Jaeger (Traces) | http://localhost:16686 | - |
-| MinIO Console | http://localhost:9001 | minioadmin/minioadmin |
+| Service         | URL                        | Credentials           |
+| --------------- | -------------------------- | --------------------- |
+| **Dashboard**   | http://localhost:5173      | -                     |
+| API Docs        | http://localhost:3000/docs | -                     |
+| Jaeger (Traces) | http://localhost:16686     | -                     |
+| MinIO Console   | http://localhost:9001      | minioadmin/minioadmin |
 
 ---
 
@@ -272,20 +272,20 @@ Set up a complete CI/CD pipeline for this service using a cloud provider's CI/CD
 
 #### ✅ Implemented Features
 
-| Requirement | Status | Implementation |
-|-------------|--------|----------------|
-| Trigger on push to `main`/`master` | ✅ | Configured in workflow triggers |
-| Trigger on pull requests | ✅ | Configured in workflow triggers |
-| Run linting (`npm run lint`) | ✅ | Lint stage with ESLint |
-| Run format check (`npm run format:check`) | ✅ | Lint stage with Prettier |
-| Run E2E tests (`npm run test:e2e`) | ✅ | Test stage with environment config |
-| Build Docker image | ✅ | Build stage with Docker Buildx |
-| Cache dependencies | ✅ | npm cache + Docker layer caching |
-| Fail fast on errors | ✅ | Pipeline stops on first failure |
-| Report test results clearly | ✅ | GitHub Actions summary |
-| **Bonus: Security scanning** | ✅ | CodeQL + Trivy container scanning |
-| **Bonus: Deploy stage** | ✅ | Template for Railway/Render/Fly.io |
-| **Bonus: Notifications** | ✅ | Template for Slack/Discord |
+| Requirement                               | Status | Implementation                     |
+| ----------------------------------------- | ------ | ---------------------------------- |
+| Trigger on push to `main`/`master`        | ✅     | Configured in workflow triggers    |
+| Trigger on pull requests                  | ✅     | Configured in workflow triggers    |
+| Run linting (`npm run lint`)              | ✅     | Lint stage with ESLint             |
+| Run format check (`npm run format:check`) | ✅     | Lint stage with Prettier           |
+| Run E2E tests (`npm run test:e2e`)        | ✅     | Test stage with environment config |
+| Build Docker image                        | ✅     | Build stage with Docker Buildx     |
+| Cache dependencies                        | ✅     | npm cache + Docker layer caching   |
+| Fail fast on errors                       | ✅     | Pipeline stops on first failure    |
+| Report test results clearly               | ✅     | GitHub Actions summary             |
+| **Bonus: Security scanning**              | ✅     | CodeQL + Trivy container scanning  |
+| **Bonus: Deploy stage**                   | ✅     | Template for Railway/Render/Fly.io |
+| **Bonus: Notifications**                  | ✅     | Template for Slack/Discord         |
 
 #### Requirements
 
@@ -335,6 +335,7 @@ A basic GitHub Actions workflow is already provided at `.github/workflows/ci.yml
 - Add additional features (caching, parallelization, deployment)
 
 ##### Bonus Points
+
 ##### Bonus Points ✅
 
 All bonus items have been implemented:
@@ -354,16 +355,16 @@ All bonus items have been implemented:
 
 #### ✅ Implemented Features
 
-| Requirement | Status | Implementation |
-|-------------|--------|----------------|
-| Sentry Error Tracking | ✅ | SDK integrated in React + Node.js |
-| OpenTelemetry Tracing | ✅ | OTLP HTTP exporter to Jaeger |
-| Jaeger UI Integration | ✅ | All traces visible at localhost:16686 |
-| Real-time Logs | ✅ | Server-Sent Events (SSE) streaming |
-| Error Boundary | ✅ | React error fallback component |
-| Custom Spans | ✅ | Instrumented critical functions |
-| Trace Correlation | ✅ | Trace IDs linked across services |
-| Performance Monitoring | ✅ | Request latency tracking |
+| Requirement            | Status | Implementation                        |
+| ---------------------- | ------ | ------------------------------------- |
+| Sentry Error Tracking  | ✅     | SDK integrated in React + Node.js     |
+| OpenTelemetry Tracing  | ✅     | OTLP HTTP exporter to Jaeger          |
+| Jaeger UI Integration  | ✅     | All traces visible at localhost:16686 |
+| Real-time Logs         | ✅     | Server-Sent Events (SSE) streaming    |
+| Error Boundary         | ✅     | React error fallback component        |
+| Custom Spans           | ✅     | Instrumented critical functions       |
+| Trace Correlation      | ✅     | Trace IDs linked across services      |
+| Performance Monitoring | ✅     | Request latency tracking              |
 
 #### 🚀 Dashboard Features
 
@@ -407,12 +408,14 @@ The React frontend includes:
 #### 🔍 Testing the Observability Stack
 
 **1. Trigger an error in Sentry**:
+
 ```bash
 # Click "Trigger Test Error" button in the dashboard
 # Error will appear in Sentry dashboard within seconds
 ```
 
 **2. View distributed traces**:
+
 ```bash
 # Create an export job
 # Visit http://localhost:16686
@@ -421,6 +424,7 @@ The React frontend includes:
 ```
 
 **3. Stream real-time logs**:
+
 ```bash
 # Open http://localhost:5173
 # Click "Stream" button in Logs panel
@@ -428,6 +432,7 @@ The React frontend includes:
 ```
 
 **4. Monitor API health**:
+
 ```bash
 # Dashboard auto-checks API health every 30 seconds
 # Check logs with: curl http://localhost:3000/health
@@ -436,12 +441,14 @@ The React frontend includes:
 #### 🔧 Configuration
 
 **Sentry DSN** (from `.env`):
+
 ```
 SENTRY_DSN=https://20219e0cc8a0191561fad68afda39968@o4510511803269120.ingest.de.sentry.io/4510520963235920
 VITE_SENTRY_DSN=https://20219e0cc8a0191561fad68afda39968@o4510511803269120.ingest.de.sentry.io/4510520963235920
 ```
 
 **OpenTelemetry Endpoint**:
+
 ```
 OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
 VITE_OTEL_ENDPOINT=http://localhost:4318/v1/traces
@@ -450,6 +457,7 @@ VITE_OTEL_ENDPOINT=http://localhost:4318/v1/traces
 #### 📈 Trace Correlation
 
 All traces include:
+
 - **Trace ID**: Unique identifier across services
 - **Span ID**: Unique operation identifier
 - **Parent Span ID**: Request hierarchy
@@ -459,6 +467,7 @@ All traces include:
 #### 🎯 Key Metrics
 
 Jaeger UI displays:
+
 - Request latency (p50, p95, p99)
 - Error rates by operation
 - Service-to-service dependency graph
@@ -510,12 +519,12 @@ Our CI/CD pipeline runs automatically on every push to `main`/`master` and on al
 
 ### Pipeline Stages
 
-| Stage | Description | Commands | Dependency |
-|-------|-------------|----------|------------|
-| 1️⃣ **Lint** | Code quality & formatting | `npm run lint`, `npm run format:check` | None |
-| 2️⃣ **Test** | End-to-end testing | `npm run test:e2e` | Lint ✅ |
-| 3️⃣ **Build** | Docker image build + Trivy scan | `docker build` | Test ✅ |
-| 4️⃣ **Deploy** | Push to Docker Hub | `docker push` | Build ✅ (main only) |
+| Stage         | Description                     | Commands                               | Dependency           |
+| ------------- | ------------------------------- | -------------------------------------- | -------------------- |
+| 1️⃣ **Lint**   | Code quality & formatting       | `npm run lint`, `npm run format:check` | None                 |
+| 2️⃣ **Test**   | End-to-end testing              | `npm run test:e2e`                     | Lint ✅              |
+| 3️⃣ **Build**  | Docker image build + Trivy scan | `docker build`                         | Test ✅              |
+| 4️⃣ **Deploy** | Push to Docker Hub              | `docker push`                          | Build ✅ (main only) |
 
 ### Pipeline Features
 
@@ -534,8 +543,8 @@ To enable Docker Hub deployment, add these secrets to your GitHub repository:
 1. Go to **Settings** → **Secrets and variables** → **Actions**
 2. Add the following secrets:
 
-| Secret | Description |
-|--------|-------------|
+| Secret               | Description              |
+| -------------------- | ------------------------ |
 | `DOCKERHUB_USERNAME` | Your Docker Hub username |
 | `DOCKERHUB_PASSWORD` | Your Docker Hub password |
 
@@ -684,13 +693,13 @@ DOWNLOAD_DELAY_MAX_MS=200000
 
 ## API Endpoints
 
-| Method | Endpoint                | Description                         |
-| ------ | ----------------------- | ----------------------------------- |
-| GET    | `/`                     | Welcome message                     |
-| GET    | `/health`               | Health check with storage status    |
-| POST   | `/v1/export`            | Initiate bulk download job          |
-| POST   | `/v1/download/check`    | Check single file availability      |
-| POST   | `/v1/download/start`    | Start download with simulated delay |
+| Method | Endpoint             | Description                         |
+| ------ | -------------------- | ----------------------------------- |
+| GET    | `/`                  | Welcome message                     |
+| GET    | `/health`            | Health check with storage status    |
+| POST   | `/v1/export`         | Initiate bulk download job          |
+| POST   | `/v1/download/check` | Check single file availability      |
+| POST   | `/v1/download/start` | Start download with simulated delay |
 
 ### Testing the Long-Running Download
 

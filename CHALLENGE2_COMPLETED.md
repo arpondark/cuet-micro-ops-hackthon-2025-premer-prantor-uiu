@@ -79,6 +79,7 @@ One of the key requirements is handling users closing their browser during a lon
 4.  **Reconnection**: When the user returns and checks the status (`GET /v1/export/:jobId`), they will see the job as `completed` (or `processing`) and can download the file.
 
 **Scenario:**
+
 1. User starts export (Job ID: `abc-123`).
 2. User closes browser tab at 50% progress.
 3. Worker continues processing to 100% and uploads to MinIO.
@@ -91,27 +92,27 @@ One of the key requirements is handling users closing their browser during a lon
 
 ### Core Implementation Files
 
-| File | Purpose |
-|------|---------|
-| [src/index.ts](src/index.ts) | Main API (Job Creation, Status, SSE) |
-| [src/worker.ts](src/worker.ts) | Background Worker (File Processing) |
-| [src/queue.ts](src/queue.ts) | Shared BullMQ Queue Configuration |
-| [docker/compose.dev.yml](docker/compose.dev.yml) | Full Docker stack (API + Worker) |
+| File                                             | Purpose                              |
+| ------------------------------------------------ | ------------------------------------ |
+| [src/index.ts](src/index.ts)                     | Main API (Job Creation, Status, SSE) |
+| [src/worker.ts](src/worker.ts)                   | Background Worker (File Processing)  |
+| [src/queue.ts](src/queue.ts)                     | Shared BullMQ Queue Configuration    |
+| [docker/compose.dev.yml](docker/compose.dev.yml) | Full Docker stack (API + Worker)     |
 
 ### Documentation Files
 
-| File | Purpose |
-|------|---------|
+| File                               | Purpose                               |
+| ---------------------------------- | ------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Complete architecture design document |
-| [QUICKSTART.md](QUICKSTART.md) | Quick start guide |
-| [MAKE.md](MAKE.md) | Makefile commands documentation |
+| [QUICKSTART.md](QUICKSTART.md)     | Quick start guide                     |
+| [MAKE.md](MAKE.md)                 | Makefile commands documentation       |
 
 ### Observability Configuration
 
-| File | Purpose |
-|------|---------|
-| [docker/config/prometheus/prometheus.yml](docker/config/prometheus/prometheus.yml) | Prometheus scrape config (API + Worker) |
-| [docker/config/grafana/provisioning/dashboards/json/api-overview.json](docker/config/grafana/provisioning/dashboards/json/api-overview.json) | Grafana dashboard |
+| File                                                                                                                                         | Purpose                                 |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| [docker/config/prometheus/prometheus.yml](docker/config/prometheus/prometheus.yml)                                                           | Prometheus scrape config (API + Worker) |
+| [docker/config/grafana/provisioning/dashboards/json/api-overview.json](docker/config/grafana/provisioning/dashboards/json/api-overview.json) | Grafana dashboard                       |
 
 ---
 
@@ -147,12 +148,12 @@ export_job_duration_seconds_bucket{status, le}
 
 ### Export API
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/v1/export` | Initiate batch export job |
-| `GET` | `/v1/export/:jobId` | Poll job status |
-| `GET` | `/v1/export/:jobId/progress` | Real-time progress (SSE) |
-| `GET` | `/v1/export/:jobId/download` | Get final download URL |
+| Method | Endpoint                     | Description               |
+| ------ | ---------------------------- | ------------------------- |
+| `POST` | `/v1/export`                 | Initiate batch export job |
+| `GET`  | `/v1/export/:jobId`          | Poll job status           |
+| `GET`  | `/v1/export/:jobId/progress` | Real-time progress (SSE)  |
+| `GET`  | `/v1/export/:jobId/download` | Get final download URL    |
 
 ---
 
