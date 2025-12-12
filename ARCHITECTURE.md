@@ -2,9 +2,21 @@
 
 ## CUET Micro-Ops Hackathon 2025 - File Download Service
 
-**Version**: 1.0  
+**Version**: 2.0  
 **Date**: December 12, 2025  
-**Author**: Hackathon Team
+**Author**: Hackathon Team  
+**Status**: ✅ **CHALLENGE 2 COMPLETED**
+
+---
+
+> 📊 **Download Processing Time Scenario Implementation**
+> 
+> This architecture handles the variable download processing times shown in the hackathon scenario:
+> - 🟢 **Fast**: 10-15 seconds (Green)
+> - 🟡 **Medium**: 30-60 seconds (Yellow)  
+> - 🔴 **Slow**: 60-120 seconds (Red)
+>
+> View real-time metrics at: **http://localhost:3001** (Grafana Dashboard)
 
 ---
 
@@ -37,10 +49,20 @@ This document outlines the architecture for a **long-running file download micro
 | **Storage** | MinIO (S3-compatible) | Self-hosted, production-ready, no vendor lock-in |
 | **Job Queue** | Redis + BullMQ | In-memory speed, persistence, battle-tested |
 | **Logging** | Loki | Integrates seamlessly with Grafana, log aggregation |
-| **Metrics** | Prometheus | Industry standard, powerful querying |
+| **Metrics** | Prometheus + prom-client | Industry standard, powerful querying |
 | **Visualization** | Grafana | Unified dashboards for metrics and logs |
 | **Tracing** | Jaeger + OpenTelemetry | Distributed tracing standard |
 | **Orchestration** | Docker Compose | No Kubernetes - simpler, faster for this scale |
+
+### Prometheus Metrics Implemented
+
+```
+http_requests_total{method, path, status}     - HTTP request counter
+http_request_duration_seconds                 - Request latency histogram
+downloads_active                              - Active downloads gauge
+downloads_total{status}                       - Download counter (completed/failed)
+download_processing_seconds{file_id, status}  - Processing time histogram
+```
 
 ---
 

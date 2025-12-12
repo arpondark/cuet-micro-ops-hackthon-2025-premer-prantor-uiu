@@ -79,6 +79,43 @@ otelSDK.start();
 const register = new client.Registry();
 client.collectDefaultMetrics({ register });
 
+// Custom HTTP metrics for Grafana dashboard
+const httpRequestsTotal = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'path', 'status'],
+  registers: [register],
+});
+
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'HTTP request duration in seconds',
+  labelNames: ['method', 'path', 'status'],
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 30, 60, 120],
+  registers: [register],
+});
+
+const downloadProcessingTime = new client.Histogram({
+  name: 'download_processing_seconds',
+  help: 'Download processing time in seconds',
+  labelNames: ['file_id', 'status'],
+  buckets: [5, 10, 15, 30, 60, 90, 120],
+  registers: [register],
+});
+
+const downloadTotal = new client.Counter({
+  name: 'downloads_total',
+  help: 'Total number of download requests',
+  labelNames: ['status'],
+  registers: [register],
+});
+
+const activeDownloads = new client.Gauge({
+  name: 'downloads_active',
+  help: 'Number of currently active downloads',
+  registers: [register],
+});
+
 const app = new OpenAPIHono();
 
 // Request ID middleware - adds unique ID to each request
@@ -91,6 +128,22 @@ app.use(async (c, next) => {
 
 // Security headers middleware (helmet-like)
 app.use(secureHeaders());
+
+// Prometheus HTTP metrics middleware
+app.use(async (c, next) => {
+  const start = Date.now();
+  await next();
+  const duration = (Date.now() - start) / 1000;
+  const path = c.req.path;
+  const method = c.req.method;
+  const status = String(c.res.status);
+  
+  // Skip metrics endpoint to avoid recursion
+  if (path !== '/metrics') {
+    httpRequestsTotal.inc({ method, path, status });
+    httpRequestDuration.observe({ method, path, status }, duration);
+  }
+});
 
 // CORS middleware
 app.use(
@@ -583,6 +636,9 @@ app.openapi(downloadStartRoute, async (c) => {
   const { file_id } = c.req.valid("json");
   const startTime = Date.now();
 
+  // Track active downloads
+  activeDownloads.inc();
+
   // Get random delay and log it
   const delayMs = getRandomDelay();
   const delaySec = (delayMs / 1000).toFixed(1);
@@ -598,6 +654,13 @@ app.openapi(downloadStartRoute, async (c) => {
   // Check if file is available in S3
   const s3Result = await checkS3Availability(file_id);
   const processingTimeMs = Date.now() - startTime;
+  const processingTimeSec = processingTimeMs / 1000;
+
+  // Track download metrics
+  activeDownloads.dec();
+  const status = s3Result.available ? 'completed' : 'failed';
+  downloadTotal.inc({ status });
+  downloadProcessingTime.observe({ file_id: String(file_id), status }, processingTimeSec);
 
   console.log(
     `[Download] Completed file_id=${String(file_id)}, actual_time=${String(processingTimeMs)}ms, available=${String(s3Result.available)}`,
