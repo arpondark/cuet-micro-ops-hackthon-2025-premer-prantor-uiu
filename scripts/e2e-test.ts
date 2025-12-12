@@ -210,7 +210,7 @@ async function testDownloadInitiate(): Promise<void> {
   const data = (await response.json()) as {
     jobId?: string;
     status?: string;
-    totalFileIds?: number;
+    totalFiles?: number;
   };
 
   if (data.jobId) {
@@ -233,13 +233,13 @@ async function testDownloadInitiate(): Promise<void> {
     );
   }
 
-  if (data.totalFileIds === 3) {
-    logPass("Download initiate totalFileIds is correct");
+  if (data.totalFiles === 3) {
+    logPass("Download initiate totalFiles is correct");
   } else {
     logFail(
-      "Download initiate totalFileIds is correct",
-      '"totalFileIds":3',
-      String(data.totalFileIds),
+      "Download initiate totalFiles is correct",
+      '"totalFiles":3',
+      String(data.totalFiles),
     );
   }
 
