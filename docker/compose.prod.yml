@@ -86,6 +86,37 @@ services:
     labels:
       - "service=delineate-worker"
 
+  # Frontend Dashboard - React + Vite (Observability Dashboard)
+  delineate-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    depends_on:
+      - delineate-app
+    networks:
+      - delineate-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+        labels: "service"
+    labels:
+      - "service=delineate-frontend"
+
   # =============================================================================
   # DATA LAYER
   # =============================================================================
