@@ -91,6 +91,11 @@ services:
     build:
       context: ../frontend
       dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-http://36.255.71.86:3000}
+        - VITE_JAEGER_URL=${VITE_JAEGER_URL:-http://36.255.71.86:16686}
+        - VITE_OTEL_ENDPOINT=${VITE_OTEL_ENDPOINT:-http://36.255.71.86:4318/v1/traces}
+        - VITE_SENTRY_DSN=${VITE_SENTRY_DSN}
     ports:
       - "80:80"
     environment:

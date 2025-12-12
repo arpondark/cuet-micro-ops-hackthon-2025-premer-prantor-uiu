@@ -1,15 +1,27 @@
-FROM node:20-alpine AS builder
+FROM node:20-bookworm AS builder
 
 WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+# Install dependencies with full permissions
+RUN npm install --unsafe-perm
 
 # Copy source
 COPY . .
+
+# Build arguments
+ARG VITE_API_URL
+ARG VITE_JAEGER_URL
+ARG VITE_OTEL_ENDPOINT
+ARG VITE_SENTRY_DSN
+
+# Set environment variables for build
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_JAEGER_URL=$VITE_JAEGER_URL
+ENV VITE_OTEL_ENDPOINT=$VITE_OTEL_ENDPOINT
+ENV VITE_SENTRY_DSN=$VITE_SENTRY_DSN
 
 # Build the app
 RUN npm run build
