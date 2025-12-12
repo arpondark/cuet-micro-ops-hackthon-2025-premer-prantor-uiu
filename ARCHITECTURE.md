@@ -24,7 +24,6 @@
 > - 🟡 **Medium**: 30-60 seconds (Yellow)
 > - 🔴 **Slow**: 60-120 seconds (Red)
 
-
 ---
 
 ## Table of Contents
@@ -50,13 +49,13 @@ This document outlines the architecture for a **long-running file download micro
 
 ### Key Decisions
 
-| Decision                 | Choice                   | Rationale                                                                    |
-| ------------------------ | ------------------------ | ---------------------------------------------------------------------------- |
-| **Architecture Pattern** | Hybrid (Polling + SSE)   | Best of both worlds - simple polling for basic clients, SSE for real-time UX |
-| **Storage**              | MinIO (S3-compatible)    | Self-hosted, production-ready, no vendor lock-in                             |
-| **Job Queue**            | Redis + BullMQ           | In-memory speed, persistence, battle-tested                                  |
-| **Tracing**              | Jaeger + OpenTelemetry   | Distributed tracing standard                                                 |
-| **Orchestration**        | Docker Compose           | No Kubernetes - simpler, faster for this scale                               |
+| Decision                 | Choice                 | Rationale                                                                    |
+| ------------------------ | ---------------------- | ---------------------------------------------------------------------------- |
+| **Architecture Pattern** | Hybrid (Polling + SSE) | Best of both worlds - simple polling for basic clients, SSE for real-time UX |
+| **Storage**              | MinIO (S3-compatible)  | Self-hosted, production-ready, no vendor lock-in                             |
+| **Job Queue**            | Redis + BullMQ         | In-memory speed, persistence, battle-tested                                  |
+| **Tracing**              | Jaeger + OpenTelemetry | Distributed tracing standard                                                 |
+| **Orchestration**        | Docker Compose         | No Kubernetes - simpler, faster for this scale                               |
 
 ### Application Metrics Implemented
 
@@ -164,25 +163,27 @@ download_processing_seconds{file_id, status}  - Processing time histogram
 
 
 ```
+
 ┌─────────────────────────────────────────────────────────────────────────────────────┐
-│                        OBSERVABILITY DATA FLOW                                       │
+│ OBSERVABILITY DATA FLOW │
 └─────────────────────────────────────────────────────────────────────────────────────┘
 
-  ┌───────────────┐     ┌───────────────┐
-  │   Hono API    │     │    Worker     │
-  │   (Traces)    │     │   (Traces)    │
-  └───────┬───────┘     └───────┬───────┘
-          │                     │
-          │ OTLP                │ OTLP
-          │                     │
-          └──────────────┬──────┘
-                         │
-                         ▼
-                 ┌───────────────┐
-                 │    Jaeger     │
-                 │   (Traces)    │
-                 └───────────────┘
-```
+┌───────────────┐ ┌───────────────┐
+│ Hono API │ │ Worker │
+│ (Traces) │ │ (Traces) │
+└───────┬───────┘ └───────┬───────┘
+│ │
+│ OTLP │ OTLP
+│ │
+└──────────────┬──────┘
+│
+▼
+┌───────────────┐
+│ Jaeger │
+│ (Traces) │
+└───────────────┘
+
+````
 
 ---
 
@@ -205,7 +206,7 @@ download_processing_seconds{file_id, status}  - Processing time histogram
 - Queue jobs to Redis/BullMQ
 - Serve status endpoints (polling + SSE)
 - Emit OpenTelemetry traces
-```
+````
 
 #### Nginx Reverse Proxy
 
@@ -579,7 +580,7 @@ GET /v1/export/:jobId/download
 
 # Health & Metrics
 GET /metrics
-  - Prometheus metrics endpoint
+  - Metrics endpoint
 ```
 
 ### API Contract
@@ -702,7 +703,7 @@ server {
         proxy_read_timeout 5s;
     }
 
-    # Prometheus metrics
+    # Metrics
     location /metrics {
         proxy_pass http://api;
         proxy_read_timeout 5s;
@@ -986,18 +987,13 @@ class DownloadManager {
 Level 1 (No dependencies):
 ├── redis
 ├── minio
-├── loki
 └── jaeger
 
 Level 2 (Depends on Level 1):
-├── prometheus (depends: minio, api)
-└── grafana (depends: prometheus, loki, jaeger)
-
-Level 3 (Depends on Level 1 & 2):
 ├── delineate-app (depends: redis, minio, jaeger)
 └── delineate-worker (depends: redis, minio)
 
-Level 4 (Depends on all):
+Level 3 (Depends on Level 2):
 └── nginx (depends: delineate-app)
 ```
 
@@ -1064,8 +1060,6 @@ Production:
    • No direct DB access
 
 ✅ Observability Security
-   • Grafana auth enabled
-   • Prometheus behind proxy
    • No PII in logs
 ```
 
@@ -1080,9 +1074,6 @@ Production:
 | **MinIO API**     | 9000          | 9000            | S3-Compatible Storage |
 | **MinIO Console** | 9001          | 9001            | Storage Admin UI      |
 | **Redis**         | 6379          | 6379 (dev only) | Job Queue & Cache     |
-| **Prometheus**    | 9090          | 9090            | Metrics Collection    |
-| **Loki**          | 3100          | 3100            | Log Aggregation       |
-| **Grafana**       | 3000          | 3001            | Dashboards            |
 | **Jaeger**        | 16686         | 16686           | Tracing UI            |
 | **Jaeger OTLP**   | 4318          | 4318            | Trace Collection      |
 
@@ -1099,10 +1090,8 @@ docker compose -f docker/compose.prod.yml up --build -d
 
 # Access Points
 - API Docs:     http://localhost:3000/docs
-- Grafana:      http://localhost:3001 (admin/admin)
 - MinIO:        http://localhost:9001 (minioadmin/minioadmin)
 - Jaeger:       http://localhost:16686
-- Prometheus:   http://localhost:9090
 ```
 
 ---
@@ -1116,8 +1105,8 @@ docker compose -f docker/compose.prod.yml up --build -d
 | **Web Framework** | Express, Fastify, Hono            | Hono           | Ultra-fast, native TS, modern API    |
 | **Job Queue**     | BullMQ, Agenda, Bee               | BullMQ         | Redis-backed, reliable, feature-rich |
 | **S3 Storage**    | MinIO, SeaweedFS, LocalStack      | MinIO          | Production-ready, S3 compatible      |
-| **Metrics**       | Prometheus, InfluxDB, Graphite    | Prometheus     | Industry standard, PromQL power      |
-| **Logging**       | Loki, ELK, Graylog                | Loki           | Grafana native, lightweight          |
+| **Metrics**       | Prometheus, InfluxDB, Graphite    | Minimal        | Simple /metrics endpoint             |
+| **Logging**       | Loki, ELK, Graylog                | Stdout         | Container logs                       |
 | **Tracing**       | Jaeger, Zipkin, Tempo             | Jaeger         | Mature, great UI, OTLP support       |
 | **Orchestration** | Kubernetes, Docker Compose, Nomad | Docker Compose | Simple, sufficient for scale         |
 
@@ -1129,7 +1118,6 @@ docker compose -f docker/compose.prod.yml up --build -d
 | **BullMQ**        | Node.js message queue library built on Redis                   |
 | **Presigned URL** | Time-limited URL granting temporary access to S3 objects       |
 | **OTLP**          | OpenTelemetry Protocol for transmitting telemetry data         |
-| **PromQL**        | Prometheus Query Language for metric analysis                  |
 
 ---
 

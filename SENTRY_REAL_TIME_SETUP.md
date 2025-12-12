@@ -3,6 +3,7 @@
 ## What Changed
 
 ### ✅ Simplified Setup
+
 - **Removed OpenTelemetry (OTEL)** - Was collecting unnecessary trace data
 - **Kept Sentry Only** - Real-time error tracking and monitoring
 - **Added Real-Time Sentry Events API** - View all errors/events pushed to Sentry in real-time
@@ -10,12 +11,15 @@
 ### 📊 Real-Time APIs Added
 
 #### 1. **Get All Sentry Events**
+
 ```bash
 GET /api/sentry/events?limit=50&type=error&level=error
 ```
+
 Returns list of all captured Sentry events (errors, transactions, replays)
 
 **Response:**
+
 ```json
 {
   "events": [
@@ -40,22 +44,28 @@ Returns list of all captured Sentry events (errors, transactions, replays)
 ```
 
 #### 2. **Real-Time Sentry Events Stream (SSE)**
+
 ```bash
 GET /api/sentry/events/stream
 ```
+
 Server-Sent Events stream showing **all errors as they happen**
 
 **Event Flow:**
+
 1. Connects to endpoint
 2. Receives last 100 events immediately
 3. New events appear in real-time every 500ms
 4. Perfect for dashboard monitoring
 
 ### 🏥 Health Endpoint (Works Now!)
+
 ```bash
 GET /health
 ```
+
 Returns:
+
 ```json
 {
   "status": "healthy|unhealthy",
@@ -75,6 +85,7 @@ VITE_SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 ```
 
 ### Sentry Features Enabled:
+
 - ✅ Browser tracing (100% sample rate)
 - ✅ Session replays (100% capture for debugging)
 - ✅ All error replays (100% capture)
@@ -91,6 +102,7 @@ SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 ```
 
 ### Sentry Features Enabled:
+
 - ✅ Real-time error capture
 - ✅ Debug mode enabled (shows Sentry logs in console)
 - ✅ Automatic error handler integration
@@ -98,43 +110,53 @@ SENTRY_DSN=https://your-sentry-dsn@sentry.io/project-id
 ## How It Works Now
 
 ### 1. **Error Occurs**
+
 ```
 App throws error → Sentry catches it → Stored in real-time DB
 ```
 
 ### 2. **Monitor Errors Real-Time**
+
 ```
 curl http://localhost:3000/api/sentry/events
 ```
+
 See all errors immediately
 
 ### 3. **Live Stream Errors**
+
 ```
 curl http://localhost:3000/api/sentry/events/stream
 ```
+
 Watch errors appear as they happen with SSE
 
 ### 4. **Check Health**
+
 ```
 curl http://localhost:3000/health
 ```
+
 API health shows storage status
 
 ## What Gets Captured
 
 ✅ **Error Events:**
+
 - Exception messages
 - Stack traces
 - Request context (method, path, request ID)
 - User browser info
 
 ✅ **Browser Sessions:**
+
 - User interactions
 - Network requests
 - Console logs
 - Video replay on errors
 
 ✅ **Backend Transactions:**
+
 - HTTP request timing
 - Database queries
 - External API calls
@@ -142,12 +164,14 @@ API health shows storage status
 ## Testing It
 
 ### 1. Start your app
+
 ```bash
 npm run dev          # Backend
 npm run dev          # Frontend (separate terminal)
 ```
 
 ### 2. Trigger an error intentionally
+
 ```bash
 # Trigger 404 error
 curl http://localhost:3000/api/fake-endpoint
@@ -159,6 +183,7 @@ curl -X POST http://localhost:3000/api/export \
 ```
 
 ### 3. View real-time events
+
 ```bash
 # Terminal 1: See all captured errors
 curl http://localhost:3000/api/sentry/events
@@ -168,6 +193,7 @@ curl http://localhost:3000/api/sentry/events/stream
 ```
 
 ### 4. Check API health
+
 ```bash
 curl http://localhost:3000/health
 ```
