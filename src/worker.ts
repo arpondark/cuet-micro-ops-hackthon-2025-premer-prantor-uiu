@@ -1,4 +1,3 @@
-import { Worker, Job } from "bullmq";
 import {
   S3Client,
   PutObjectCommand,
@@ -6,9 +5,14 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { serve } from "@hono/node-server";
+import { Worker } from "bullmq";
+import { Hono } from "hono";
 import Redis from "ioredis";
-import { z } from "zod";
 import client from "prom-client";
+import { z } from "zod";
+
+import type { Job } from "bullmq";
 
 // Environment schema
 const EnvSchema = z.object({
@@ -136,7 +140,7 @@ async function processExportJob(
   const startTime = Date.now();
 
   console.log(
-    `[Worker] Processing job ${jobId} for user ${userId} with ${fileIds.length} files`
+    `[Worker] Processing job ${jobId} for user ${userId} with ${String(fileIds.length)} files`
   );
 
   workerActiveJobs.inc();
@@ -163,8 +167,8 @@ async function processExportJob(
       await sleep(delayMs);
 
       // Check if file exists in S3 (or simulate)
-      const s3Key = `downloads/${fileId}.zip`;
-      let fileContent = `File ${fileId} content`;
+      const s3Key = `downloads/${String(fileId)}.zip`;
+      let fileContent = `File ${String(fileId)} content`;
 
       try {
         const headCommand = new HeadObjectCommand({
@@ -172,9 +176,9 @@ async function processExportJob(
           Key: s3Key,
         });
         await s3Client.send(headCommand);
-        fileContent = `File ${fileId} - exists in S3`;
+        fileContent = `File ${String(fileId)} - exists in S3`;
       } catch {
-        fileContent = `File ${fileId} - simulated content`;
+        fileContent = `File ${String(fileId)} - simulated content`;
       }
 
       processedData.push(fileContent);
@@ -185,11 +189,11 @@ async function processExportJob(
         currentFile: i + 1,
         totalFiles: fileIds.length,
         stage: "processing",
-        message: `Processing file ${i + 1} of ${fileIds.length} (ID: ${fileId})`,
+        message: `Processing file ${String(i + 1)} of ${String(fileIds.length)} (ID: ${String(fileId)})`,
       } as ExportJobProgress);
 
       console.log(
-        `[Worker] Job ${jobId}: Processed file ${i + 1}/${fileIds.length} (ID: ${fileId})`
+        `[Worker] Job ${jobId}: Processed file ${String(i + 1)}/${String(fileIds.length)} (ID: ${String(fileId)})`
       );
     }
 
@@ -292,18 +296,18 @@ const worker = new Worker<ExportJobData, ExportJobResult>(
 // Worker event handlers
 worker.on("completed", (job, result) => {
   console.log(
-    `[Worker] Job ${job.id} completed. Download URL: ${result.downloadUrl.substring(0, 80)}...`
+    `[Worker] Job ${String(job.id)} completed. Download URL: ${result.downloadUrl.substring(0, 80)}...`
   );
 });
 
 worker.on("failed", (job, err) => {
-  console.error(`[Worker] Job ${job?.id} failed:`, err.message);
+  console.error(`[Worker] Job ${String(job?.id)} failed:`, err.message);
 });
 
 worker.on("progress", (job, progress) => {
   const p = progress as ExportJobProgress;
   console.log(
-    `[Worker] Job ${job.id}: ${p.percent}% - ${p.message}`
+    `[Worker] Job ${String(job.id)}: ${String(p.percent)}% - ${p.message}`
   );
 });
 
@@ -316,22 +320,18 @@ const shutdown = async () => {
   console.log("[Worker] Shutting down...");
   await worker.close();
   await redisConnection.quit();
-  process.exit(0);
+  throw new Error("Worker shutdown complete");
 };
 
-process.on("SIGTERM", shutdown);
-process.on("SIGINT", shutdown);
+process.on("SIGTERM", () => void shutdown());
+process.on("SIGINT", () => void shutdown());
 
 console.log(
-  `[Worker] Started with concurrency ${env.WORKER_CONCURRENCY}, connected to Redis at ${env.REDIS_HOST}:${env.REDIS_PORT}`
+  `[Worker] Started with concurrency ${String(env.WORKER_CONCURRENCY)}, connected to Redis at ${env.REDIS_HOST}:${String(env.REDIS_PORT)}`
 );
 console.log(
-  `[Worker] Processing delays: ${env.DOWNLOAD_DELAY_MIN_MS / 1000}s - ${env.DOWNLOAD_DELAY_MAX_MS / 1000}s (enabled: ${env.DOWNLOAD_DELAY_ENABLED})`
+  `[Worker] Processing delays: ${String(env.DOWNLOAD_DELAY_MIN_MS / 1000)}s - ${String(env.DOWNLOAD_DELAY_MAX_MS / 1000)}s (enabled: ${String(env.DOWNLOAD_DELAY_ENABLED)})`
 );
-
-// Export metrics endpoint for standalone worker process
-import { serve } from "@hono/node-server";
-import { Hono } from "hono";
 
 const metricsApp = new Hono();
 
@@ -351,4 +351,4 @@ serve({
   port: METRICS_PORT,
 });
 
-console.log(`[Worker] Metrics server listening on port ${METRICS_PORT}`);
+console.log(`[Worker] Metrics server listening on port ${String(METRICS_PORT)}`);

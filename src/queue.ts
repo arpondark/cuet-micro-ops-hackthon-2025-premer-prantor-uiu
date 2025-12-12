@@ -1,4 +1,5 @@
-import { Queue, Job } from "bullmq";
+import { Queue } from "bullmq";
+import type { Job } from "bullmq";
 import Redis from "ioredis";
 
 // Environment configuration
@@ -81,7 +82,7 @@ export async function addExportJob(
   });
 
   console.log(
-    `[Queue] Added export job ${jobId} for user ${userId} with ${fileIds.length} files`
+    `[Queue] Added export job ${jobId} for user ${userId} with ${String(fileIds.length)} files`
   );
 
   return job;
@@ -113,9 +114,9 @@ export async function getJobStatus(jobId: string): Promise<{
   }
 
   const state = await job.getState();
-  const progress = (job.progress as ExportJobProgress) || null;
-  const result = job.returnvalue || null;
-  const error = job.failedReason || null;
+  const progress = job.progress as ExportJobProgress;
+  const result = job.returnvalue;
+  const error = job.failedReason;
 
   return {
     status: state,
@@ -131,4 +132,4 @@ export async function closeQueue(): Promise<void> {
   await redisConnection.quit();
 }
 
-console.log(`[Queue] Export queue initialized, connecting to Redis at ${REDIS_HOST}:${REDIS_PORT}`);
+console.log(`[Queue] Export queue initialized, connecting to Redis at ${REDIS_HOST}:${String(REDIS_PORT)}`);

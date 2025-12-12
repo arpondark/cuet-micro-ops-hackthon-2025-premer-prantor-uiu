@@ -1,11 +1,11 @@
 # Architecture Design Document
 
-## CUET Micro-Ops Hackathon 2025 - File Download Service
+## CUET Micro-Ops Hackathon 2025 - File Download Service with Observability
 
-**Version**: 2.1  
+**Version**: 3.0  
 **Date**: December 12, 2025  
 **Author**: Hackathon Team  
-**Status**: ✅ **ALL CHALLENGES COMPLETED** (Including Advanced Export System)
+**Status**: ✅ **ALL CHALLENGES COMPLETED** (Sentry + OpenTelemetry + Jaeger)
 
 ---
 

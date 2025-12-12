@@ -95,12 +95,6 @@ make logs-api
 ```
 Shows logs from the Hono API server only.
 
-### View Grafana Logs
-```bash
-make logs-grafana
-```
-Shows Grafana container logs.
-
 ### View MinIO Logs
 ```bash
 make logs-minio
@@ -259,15 +253,13 @@ make dev      # Fresh start
 
 | Service | URL | Port |
 |---------|-----|------|
+| React Dashboard | <http://localhost:5173> | 5173 |
 | API Documentation | <http://localhost:3000/docs> | 3000 |
 | Health Check | <http://localhost:3000/health> | 3000 |
 | OpenAPI Spec | <http://localhost:3000/openapi> | 3000 |
-| Grafana | <http://localhost:3001> | 3001 |
+| Jaeger UI | <http://localhost:16686> | 16686 |
 | MinIO Console | <http://localhost:9001> | 9001 |
 | MinIO API | <http://localhost:9000> | 9000 |
-| Prometheus | <http://localhost:9090> | 9090 |
-| Jaeger UI | <http://localhost:16686> | 16686 |
-| Loki | <http://localhost:3100> | 3100 |
 | Redis | localhost:6379 | 6379 |
 
 ---
@@ -276,8 +268,17 @@ make dev      # Fresh start
 
 | Service | Username | Password |
 |---------|----------|----------|
-| Grafana | admin | admin |
 | MinIO | minioadmin | minioadmin |
+
+---
+
+## 🔭 Observability (Challenge 4)
+
+| Tool | Purpose | URL |
+|------|---------|-----|
+| Sentry | Error tracking | https://sentry.io (cloud) |
+| OpenTelemetry | Distributed tracing | - |
+| Jaeger | Trace visualization | <http://localhost:16686> |
 
 ---
 

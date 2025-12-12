@@ -62,6 +62,7 @@ curl -X POST http://localhost:3000/v1/export/create \
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Complete architecture design document |
 | [CHALLENGE2_COMPLETED.md](CHALLENGE2_COMPLETED.md) | Challenge 2 completion details |
 | [CHALLENGE3_COMPLETED.md](CHALLENGE3_COMPLETED.md) | CI/CD Pipeline implementation details |
+| [CHALLENGE4_COMPLETED.md](CHALLENGE4_COMPLETED.md) | Observability Dashboard implementation |
 | [QUICKSTART.md](QUICKSTART.md) | Quick start guide |
 | [STACK.md](STACK.md) | Technology stack documentation |
 | [.github/workflows/ci.yml](.github/workflows/ci.yml) | GitHub Actions CI/CD workflow |
@@ -70,11 +71,10 @@ curl -X POST http://localhost:3000/v1/export/create \
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
+| **Dashboard** | http://localhost:5173 | - |
 | API Docs | http://localhost:3000/docs | - |
-| Grafana | http://localhost:3001 | admin/admin |
-| Prometheus | http://localhost:9090 | - |
-| MinIO | http://localhost:9001 | minioadmin/minioadmin |
-| Jaeger | http://localhost:16686 | - |
+| Jaeger (Traces) | http://localhost:16686 | - |
+| MinIO Console | http://localhost:9001 | minioadmin/minioadmin |
 
 ---
 
@@ -348,103 +348,121 @@ All bonus items have been implemented:
 
 ### Challenge 4: Observability Dashboard (Bonus)
 
-#### Your Mission
+### Challenge 4: Observability Dashboard ✅
 
-Build a simple React UI that integrates with **Sentry** for error tracking and **OpenTelemetry** for distributed tracing, providing visibility into the download service's health and performance.
+> **Status: COMPLETED** - See [CHALLENGE4_COMPLETED.md](CHALLENGE4_COMPLETED.md) for detailed implementation
 
-#### Testing Sentry Integration
+#### ✅ Implemented Features
 
-The API includes a built-in way to test Sentry error tracking:
+| Requirement | Status | Implementation |
+|-------------|--------|----------------|
+| Sentry Error Tracking | ✅ | SDK integrated in React + Node.js |
+| OpenTelemetry Tracing | ✅ | OTLP HTTP exporter to Jaeger |
+| Jaeger UI Integration | ✅ | All traces visible at localhost:16686 |
+| Real-time Logs | ✅ | Server-Sent Events (SSE) streaming |
+| Error Boundary | ✅ | React error fallback component |
+| Custom Spans | ✅ | Instrumented critical functions |
+| Trace Correlation | ✅ | Trace IDs linked across services |
+| Performance Monitoring | ✅ | Request latency tracking |
 
+#### 🚀 Dashboard Features
+
+The React frontend includes:
+
+1. **Health Status Widget**
+   - Real-time API health check
+   - Storage availability status
+   - Auto-refresh every 30 seconds
+
+2. **Export Jobs Management**
+   - Create new export jobs
+   - View job status and progress
+   - Cancel running jobs
+   - Download completed files
+
+3. **Real-time Logs Panel**
+   - SSE streaming from backend
+   - Log level filtering (info, warn, error, debug)
+   - Timestamp and service information
+   - Links to Jaeger traces via trace ID
+
+4. **Error Log Display**
+   - Captured application errors
+   - Sentry integration details
+   - Quick links to Sentry dashboard
+
+5. **External Links**
+   - Jaeger UI for distributed tracing
+   - MinIO console for file browsing
+   - API documentation (Swagger)
+
+#### 📊 Technology Stack
+
+- **Frontend**: React 18 + Vite 6 + TypeScript + Tailwind CSS
+- **Sentry**: Cloud-hosted error tracking (`o4510511803269120.ingest.de.sentry.io`)
+- **OpenTelemetry**: Browser SDK with OTLP HTTP exporter
+- **Jaeger**: All-in-One deployment (http://localhost:16686)
+- **Real-time**: Server-Sent Events (SSE) protocol
+
+#### 🔍 Testing the Observability Stack
+
+**1. Trigger an error in Sentry**:
 ```bash
-# Trigger an intentional error for Sentry testing
-curl -X POST "http://localhost:3000/v1/download/check?sentry_test=true" \
-  -H "Content-Type: application/json" \
-  -d '{"file_id": 70000}'
-
-# Response: {"error":"Internal Server Error","message":"Sentry test error..."}
-# This error should appear in your Sentry dashboard!
+# Click "Trigger Test Error" button in the dashboard
+# Error will appear in Sentry dashboard within seconds
 ```
 
-#### Requirements
-
-##### 1. React Application Setup
-
-Create a React application (using Vite or Next.js) that:
-
-- Connects to this download API
-- Displays download job status
-- Shows real-time error tracking
-- Visualizes trace data
-
-##### 2. Sentry Integration
-
-**Features to implement**:
-
-- [ ] Error boundary wrapping the entire app
-- [ ] Automatic error capture for failed API calls
-- [ ] User feedback dialog on errors
-- [ ] Performance monitoring for page loads
-- [ ] Custom error logging for business logic errors
-
-##### 3. OpenTelemetry Integration
-
-**Features to implement**:
-
-- [ ] Trace propagation from frontend to backend
-- [ ] Custom spans for user interactions
-- [ ] Correlation of frontend and backend traces
-- [ ] Display trace IDs in the UI for debugging
-
-##### 4. Dashboard Features
-
-Build a dashboard that displays:
-
-| Feature             | Description                                  |
-| ------------------- | -------------------------------------------- |
-| Health Status       | Real-time API health from `/health` endpoint |
-| Download Jobs       | List of initiated downloads with status      |
-| Error Log           | Recent errors captured by Sentry             |
-| Trace Viewer        | Link to Jaeger UI or embedded trace view     |
-| Performance Metrics | API response times, success/failure rates    |
-
-##### 5. Correlation
-
-Ensure end-to-end traceability:
-
-```
-User clicks "Download" button
-    │
-    ▼
-Frontend creates span with trace-id: abc123
-    │
-    ▼
-API request includes header: traceparent: 00-abc123-...
-    │
-    ▼
-Backend logs include: trace_id=abc123
-    │
-    ▼
-Errors in Sentry tagged with: trace_id=abc123
+**2. View distributed traces**:
+```bash
+# Create an export job
+# Visit http://localhost:16686
+# Search for service: "delineate-app" or "delineate-frontend"
+# Click on any trace to see span hierarchy and timing
 ```
 
-#### Deliverables
+**3. Stream real-time logs**:
+```bash
+# Open http://localhost:5173
+# Click "Stream" button in Logs panel
+# Filter by level to see specific log types
+```
 
-1. **React Application** in a `frontend/` directory
-2. **Docker Compose** update to include:
-   - Frontend service
-   - Jaeger UI accessible for trace viewing
-3. **Documentation** on how to:
-   - Set up Sentry project and get DSN
-   - Configure OpenTelemetry collector
-   - Run the full stack locally
+**4. Monitor API health**:
+```bash
+# Dashboard auto-checks API health every 30 seconds
+# Check logs with: curl http://localhost:3000/health
+```
 
-#### Resources
+#### 🔧 Configuration
 
-- [Sentry React SDK](https://docs.sentry.io/platforms/javascript/guides/react/)
-- [OpenTelemetry JavaScript](https://opentelemetry.io/docs/instrumentation/js/)
-- [Jaeger UI](https://www.jaegertracing.io/)
-- [W3C Trace Context](https://www.w3.org/TR/trace-context/)
+**Sentry DSN** (from `.env`):
+```
+SENTRY_DSN=https://20219e0cc8a0191561fad68afda39968@o4510511803269120.ingest.de.sentry.io/4510520963235920
+VITE_SENTRY_DSN=https://20219e0cc8a0191561fad68afda39968@o4510511803269120.ingest.de.sentry.io/4510520963235920
+```
+
+**OpenTelemetry Endpoint**:
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=http://delineate-jaeger:4318
+VITE_OTEL_ENDPOINT=http://localhost:4318/v1/traces
+```
+
+#### 📈 Trace Correlation
+
+All traces include:
+- **Trace ID**: Unique identifier across services
+- **Span ID**: Unique operation identifier
+- **Parent Span ID**: Request hierarchy
+- **Custom Tags**: service, user_id, job_id
+- **Baggage**: Propagated context values
+
+#### 🎯 Key Metrics
+
+Jaeger UI displays:
+- Request latency (p50, p95, p99)
+- Error rates by operation
+- Service-to-service dependency graph
+- Span duration breakdown
 
 ---
 

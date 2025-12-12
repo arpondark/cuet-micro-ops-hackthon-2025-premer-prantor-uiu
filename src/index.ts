@@ -180,12 +180,135 @@ app.get("/metrics", async (c) => {
   return c.body(await register.metrics());
 });
 
+// =============================================================================
+// IN-MEMORY LOG STORAGE FOR REAL-TIME LOGS (Challenge 4)
+// =============================================================================
+interface LogEntry {
+  id: string;
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  service: string;
+  traceId?: string;
+  spanId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// Store last 1000 logs in memory
+const MAX_LOGS = 1000;
+const logsStore: LogEntry[] = [];
+
+// Helper to add log entry
+const addLog = (level: LogEntry['level'], message: string, metadata?: Record<string, unknown>, traceId?: string) => {
+  const entry: LogEntry = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    service: 'delineate-api',
+    traceId,
+    metadata,
+  };
+  logsStore.unshift(entry);
+  if (logsStore.length > MAX_LOGS) {
+    logsStore.pop();
+  }
+  return entry;
+};
+
+// Log all requests
+app.use(async (c, next) => {
+  const start = Date.now();
+  const traceId = c.req.header('traceparent')?.split('-')[1];
+  
+  await next();
+  
+  const duration = Date.now() - start;
+  const level = c.res.status >= 500 ? 'error' : c.res.status >= 400 ? 'warn' : 'info';
+  
+  addLog(level, `${c.req.method} ${c.req.path} - ${c.res.status} (${duration}ms)`, {
+    method: c.req.method,
+    path: c.req.path,
+    status: c.res.status,
+    duration,
+    requestId: c.get('requestId'),
+  }, traceId);
+});
+
+// Logs API endpoint
+app.get("/api/logs", (c) => {
+  const limit = Math.min(Number(c.req.query('limit') || 100), MAX_LOGS);
+  const level = c.req.query('level');
+  const since = c.req.query('since');
+  
+  let filteredLogs = logsStore;
+  
+  if (level) {
+    filteredLogs = filteredLogs.filter(log => log.level === level);
+  }
+  
+  if (since) {
+    const sinceDate = new Date(since);
+    filteredLogs = filteredLogs.filter(log => new Date(log.timestamp) > sinceDate);
+  }
+  
+  return c.json({
+    logs: filteredLogs.slice(0, limit),
+    total: filteredLogs.length,
+    hasMore: filteredLogs.length > limit,
+  });
+});
+
+// SSE endpoint for real-time log streaming
+app.get("/api/logs/stream", async (c) => {
+  let lastLogId = '';
+  
+  return streamSSE(c, async (stream) => {
+    // Send existing logs first
+    for (const log of logsStore.slice(0, 50).reverse()) {
+      await stream.writeSSE({
+        data: JSON.stringify(log),
+        event: 'log',
+        id: log.id,
+      });
+      lastLogId = log.id;
+    }
+    
+    // Then poll for new logs
+    while (true) {
+      await stream.sleep(1000);
+      
+      const newLogs = logsStore.filter(log => {
+        const lastIndex = logsStore.findIndex(l => l.id === lastLogId);
+        const currentIndex = logsStore.indexOf(log);
+        return lastIndex === -1 || currentIndex < lastIndex;
+      });
+      
+      for (const log of newLogs.reverse()) {
+        await stream.writeSSE({
+          data: JSON.stringify(log),
+          event: 'log',
+          id: log.id,
+        });
+        lastLogId = log.id;
+      }
+    }
+  });
+});
+
 // ErrorResponseSchema removed
 
 // Error handler with Sentry
 app.onError((err, c) => {
   c.get("sentry").captureException(err);
   const requestId = c.get("requestId") as string | undefined;
+  
+  // Log error to our store
+  addLog('error', `Error: ${err.message}`, {
+    stack: err.stack,
+    requestId,
+  });
+  
   return c.json(
     {
       error: "Internal Server Error",
